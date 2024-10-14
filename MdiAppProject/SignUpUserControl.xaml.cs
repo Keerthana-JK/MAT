@@ -24,5 +24,7 @@ namespace MdiAppProject
 		{
 			InitializeComponent();
 		}
-	}
+
+     
+    }
 }

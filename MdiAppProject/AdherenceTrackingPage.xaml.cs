@@ -14,14 +14,14 @@ using System.Windows.Shapes;
 
 namespace MdiAppProject
 {
-	/// <summary>
-	/// Interaction logic for AdherenceTrackingWindow.xaml
-	/// </summary>
-	public partial class AdherenceTrackingWindow : Window
-	{
-		public AdherenceTrackingWindow()
-		{
-			InitializeComponent();
-		}
-	}
+    /// <summary>
+    /// Interaction logic for AdherenceTrackingPage.xaml
+    /// </summary>
+    public partial class AdherenceTrackingPage : Window
+    {
+        public AdherenceTrackingPage()
+        {
+            InitializeComponent();
+        }
+    }
 }

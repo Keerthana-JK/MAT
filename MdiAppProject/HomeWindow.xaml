@@ -10,7 +10,7 @@
 		<TabControl>
 
 			<TabItem Header="Login">
-				<Canvas >
+				<Canvas x:Name="btnLogin" >
 					<local:LoginUserControl />
 				</Canvas>
 			</TabItem>

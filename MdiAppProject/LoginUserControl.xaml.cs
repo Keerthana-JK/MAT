@@ -24,5 +24,10 @@ namespace MdiAppProject
 		{
 			InitializeComponent();
 		}
-	}
+
+        private void btnLogin_Click(object sender, RoutedEventArgs e)
+        {
+			FormConfig.loggedIn.Show();
+        }
+    }
 }

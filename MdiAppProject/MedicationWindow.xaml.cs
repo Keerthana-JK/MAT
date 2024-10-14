@@ -23,5 +23,20 @@ namespace MdiAppProject
 		{
 			InitializeComponent();
 		}
-	}
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+			FormConfig.addMedicationWindow.Show();
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+			FormConfig.adheranceTrackingWindow.Show();
+        }
+
+        private void btnViewSchedule_Click(object sender, RoutedEventArgs e)
+        {
+			FormConfig.medicationScheduleWindow.Show();
+        }
+    }
 }

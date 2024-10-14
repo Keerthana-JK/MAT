@@ -82,8 +82,8 @@
     <Compile Include="AddMedicationWindow.xaml.cs">
       <DependentUpon>AddMedicationWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="AdherenceTrackingWindow.xaml.cs">
-      <DependentUpon>AdherenceTrackingWindow.xaml</DependentUpon>
+    <Compile Include="AdherenceTrackingPage.xaml.cs">
+      <DependentUpon>AdherenceTrackingPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="CheckInWindow.xaml.cs">
       <DependentUpon>CheckInWindow.xaml</DependentUpon>
@@ -97,6 +97,9 @@
     <Compile Include="FormConfig.cs" />
     <Compile Include="HomeWindow.xaml.cs">
       <DependentUpon>HomeWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="LoggedInWindow.xaml.cs">
+      <DependentUpon>LoggedInWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="LoginUserControl.xaml.cs">
       <DependentUpon>LoginUserControl.xaml</DependentUpon>
@@ -135,7 +138,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="AdherenceTrackingWindow.xaml">
+    <Page Include="AdherenceTrackingPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -152,6 +155,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="HomeWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LoggedInWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -258,5 +265,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

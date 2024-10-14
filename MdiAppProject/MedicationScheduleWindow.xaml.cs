@@ -14,14 +14,14 @@ using System.Windows.Shapes;
 
 namespace MdiAppProject
 {
-	/// <summary>
-	/// Interaction logic for MedicationScheduleWindow.xaml
-	/// </summary>
-	public partial class MedicationScheduleWindow : Window
-	{
-		public MedicationScheduleWindow()
-		{
-			InitializeComponent();
-		}
-	}
+    /// <summary>
+    /// Interaction logic for MedicationScheduleWindow.xaml
+    /// </summary>
+    public partial class MedicationScheduleWindow : Window
+    {
+        public MedicationScheduleWindow()
+        {
+            InitializeComponent();
+        }
+    }
 }
