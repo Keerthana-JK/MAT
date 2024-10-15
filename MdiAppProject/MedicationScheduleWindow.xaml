@@ -7,10 +7,10 @@
         mc:Ignorable="d"
         Title="MedicationScheduleWindow" Height="450" Width="800">
     <Grid>
-        <ListView ItemsSource="{Binding Medications}">
+        <ListView ItemsSource="{Binding Medication}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="200" />
+                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding MedicationName}" Width="200" />
                     <GridViewColumn Header="Dose Time" DisplayMemberBinding="{Binding DoseTime}" Width="200" />
                     <GridViewColumn Header="Status" DisplayMemberBinding="{Binding DoseStatus}" Width="200" />
 

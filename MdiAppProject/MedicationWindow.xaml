@@ -11,6 +11,18 @@
 		<Button Content="View Adherence Tracker" Canvas.Left="500" Canvas.Top="25" Height="39" Width="241" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Verdana" FontSize="18" Click="Button_Click_1"></Button>
 		<Button Content="Edit" Canvas.Left="123" Canvas.Top="363" Height="31" Width="118" FontFamily="Verdana" FontSize="18"/>
 		<Button Content="View Schedule" x:Name="btnViewSchedule" Canvas.Left="560" Canvas.Top="371" Height="35" Width="170" FontFamily="Verdana" FontSize="18" HorizontalAlignment="Left" VerticalAlignment="Center" Click="btnViewSchedule_Click"/>
-		<DataGrid x:Name="Medication_" Height="215" Canvas.Left="63" Canvas.Top="99" Width="662" d:ItemsSource="{d:SampleData ItemCount=5}"/>
+		<DataGrid x:Name="grdMedications" Height="215" Canvas.Left="63" Canvas.Top="99" Width="662" IsReadOnly="True" AreRowDetailsFrozen="True" AutoGenerateColumns="False" SelectionMode="Single" ItemsSource="{Binding Medications}">
+			<DataGrid.Columns>
+				<DataGridTextColumn Header="Medication Id" Binding="{Binding MedicationID}"></DataGridTextColumn>
+				<DataGridTextColumn Header="User Id" Binding="{Binding UserID}"></DataGridTextColumn>
+				<DataGridTextColumn Header="Medication Name" Binding="{Binding MedicationName}"></DataGridTextColumn>
+				<DataGridTextColumn Header="Dosage" Binding="{Binding Dosage}"></DataGridTextColumn>
+				<DataGridTextColumn Header="Frequency" Binding="{Binding Frequency}"></DataGridTextColumn>
+				<DataGridTextColumn Header="StartDate" Binding="{Binding StartDate}"></DataGridTextColumn>
+				<DataGridTextColumn Header="EndDate" Binding="{Binding EndDate}"></DataGridTextColumn>
+				<DataGridTextColumn Header="CreatedAt" Binding="{Binding CreatedAt}"></DataGridTextColumn>
+				<DataGridTextColumn Header="UpdatedAt" Binding="{Binding UpdatedAt}"></DataGridTextColumn>
+			</DataGrid.Columns>
+		</DataGrid>
 	</Canvas>
 </Window>

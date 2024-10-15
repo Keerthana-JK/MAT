@@ -35,6 +35,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
     <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
       <HintPath>..\packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
     </Reference>
@@ -60,7 +66,10 @@
       <HintPath>..\packages\Microsoft.SqlServer.Types.14.0.314.76\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -85,16 +94,28 @@
     <Compile Include="AdherenceTrackingPage.xaml.cs">
       <DependentUpon>AdherenceTrackingPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CheckIn.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="CheckInWindow.xaml.cs">
       <DependentUpon>CheckInWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DashboardWindow.xaml.cs">
       <DependentUpon>DashboardWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Doctor.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="DoctorWindow.xaml.cs">
       <DependentUpon>DoctorWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Doctor_Patient.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="FormConfig.cs" />
+    <Compile Include="Goal.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="HomeWindow.xaml.cs">
       <DependentUpon>HomeWindow.xaml</DependentUpon>
     </Compile>
@@ -104,20 +125,45 @@
     <Compile Include="LoginUserControl.xaml.cs">
       <DependentUpon>LoginUserControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MatEntityDataModel.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MatEntityDataModel.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MatEntityDataModel.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MatEntityDataModel.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MatEntityDataModel.edmx</DependentUpon>
+    </Compile>
     <Compile Include="MdtViewModel.cs" />
-    <Compile Include="Medication.cs" />
+    <Compile Include="Medication.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MedicationSchedule.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="MedicationScheduleWindow.xaml.cs">
       <DependentUpon>MedicationScheduleWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="MedicationWindow.xaml.cs">
       <DependentUpon>MedicationWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Notification.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Patient.cs" />
     <Compile Include="PatientProfileWindow.xaml.cs">
       <DependentUpon>PatientProfileWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="RelayCommand.cs" />
-    <Compile Include="Reminder.cs" />
+    <Compile Include="Reminder.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="RemindersAndNotificationsWindow.xaml.cs">
       <DependentUpon>RemindersAndNotificationsWindow.xaml</DependentUpon>
     </Compile>
@@ -134,6 +180,9 @@
       <DependentUpon>SignUpWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="User.cs">
+      <DependentUpon>MatEntityDataModel.tt</DependentUpon>
+    </Compile>
     <Page Include="AddMedicationWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -229,6 +278,13 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EntityDeploy Include="MatEntityDataModel.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>MatEntityDataModel.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="MatEntityDataModel.edmx.diagram">
+      <DependentUpon>MatEntityDataModel.edmx</DependentUpon>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -251,6 +307,16 @@
     <Resource Include="docSys.jpeg" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="MatEntityDataModel.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MatEntityDataModel.Context.cs</LastGenOutput>
+      <DependentUpon>MatEntityDataModel.edmx</DependentUpon>
+    </Content>
+    <Content Include="MatEntityDataModel.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>MatEntityDataModel.edmx</DependentUpon>
+      <LastGenOutput>MatEntityDataModel.cs</LastGenOutput>
+    </Content>
     <Content Include="SqlServerTypes\readme.htm" />
     <Content Include="SqlServerTypes\x64\msvcr120.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -265,6 +331,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
