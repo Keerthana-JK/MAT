@@ -1,25 +1,48 @@
-public class MedicationSchedulesRepo
+using System;
+using System.Collections.Generic;
+
+public class MedicationScheduleGenerator
 {
-    public void CreateMedicationSchedules(Medication medication, YourDbContext context)
+    public List<DateTime> GenerateScheduledTimes(DateTime startDate, DateTime endDate, string frequency)
     {
-        // Create an instance of the schedule generator
-        MedicationScheduleGenerator scheduleGenerator = new MedicationScheduleGenerator();
+        List<DateTime> scheduledTimes = new List<DateTime>();
 
-        // Generate the scheduled times
-        List<DateTime> scheduledTimes = scheduleGenerator.GenerateScheduledTimes(medication.StartDate, medication.EndDate, medication.Frequency);
+        // Define times for morning, midday, and evening
+        TimeSpan morningTime = new TimeSpan(8, 0, 0);   // 8:00 AM
+        TimeSpan middayTime = new TimeSpan(12, 0, 0);   // 12:00 PM
+        TimeSpan eveningTime = new TimeSpan(18, 0, 0);  // 6:00 PM
 
-        foreach (var scheduledTime in scheduledTimes)
+        // Split the frequency string (format: "1-0-1")
+        string[] parts = frequency.Split('-');
+        if (parts.Length != 3)
         {
-            MedicationSchedule newSchedule = new MedicationSchedule
-            {
-                MedicationID = medication.MedicationID, // Assuming this is set properly
-                ScheduledTime = scheduledTime,
-                Status = "Pending", // Default status
-                CreatedAt = DateTime.Now
-            };
-
-            // Save the new schedule to the same context
-            context.MedicationSchedules.Add(newSchedule);
+            throw new ArgumentException("Invalid frequency format. Expected '1-0-1'.");
         }
+
+        bool morningDose = parts[0] == "1";
+        bool middayDose = parts[1] == "1";
+        bool eveningDose = parts[2] == "1";
+
+        // Iterate through each day between startDate and endDate
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            if (morningDose)
+            {
+                // Add morning scheduled time
+                scheduledTimes.Add(date.Date + morningTime);
+            }
+            if (middayDose)
+            {
+                // Add midday scheduled time
+                scheduledTimes.Add(date.Date + middayTime);
+            }
+            if (eveningDose)
+            {
+                // Add evening scheduled time
+                scheduledTimes.Add(date.Date + eveningTime);
+            }
+        }
+
+        return scheduledTimes;
     }
 }
