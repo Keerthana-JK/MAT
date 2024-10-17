@@ -7,7 +7,8 @@ public class MedicationSchedulesRepo
         _scheduleGenerator = new MedicationScheduleGenerator();
     }
 
-    public void CreateMedicationSchedules(Medication medication)
+    // Accept the context from the caller to use the same DB context instance
+    public void CreateMedicationSchedules(Medication medication, YourDbContext context)
     {
         // Generate the scheduled times from the medication's startDate, endDate, and frequency
         List<DateTime> scheduledTimes = _scheduleGenerator.GenerateScheduledTimes(medication.StartDate, medication.EndDate, medication.Frequency);
@@ -22,10 +23,8 @@ public class MedicationSchedulesRepo
                 CreatedAt = DateTime.Now
             };
 
-            // Save newSchedule to the database
-            // This will depend on your specific data access method, for example using EF Core:
-            // context.MedicationSchedules.Add(newSchedule);
-            // context.SaveChanges();
+            // Save the new schedule to the same context
+            context.MedicationSchedules.Add(newSchedule);
         }
     }
 }
