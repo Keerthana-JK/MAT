@@ -169,3 +169,39 @@ namespace MATProject.ViewModels
 
 	}
 }
+
+
+MedicationTiming
+----------------
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MATProject.Entities
+{
+	public class MedicationTiming
+	{
+		public bool MorningDose { get; set; }
+		public bool MiddayDose { get; set; }
+		public bool EveningDose { get; set; }
+
+		public void SetTiming(string timingString)
+		{
+			//Split string into parts
+			string[] parts = timingString.Split('-');
+			if (parts.Length != 3)
+			{
+				throw new ArgumentException("Invalid format. Expected '1-0-1' format.");
+			}
+
+			//Parse each part and set corresponding dosage timing
+			MorningDose=parts[0] =="1";
+			MiddayDose = parts[1] == "1";
+			EveningDose = parts[2] == "1";
+
+		}
+	}
+}
+
