@@ -1,36 +1,54 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MATProject.Entities
 {
-    public partial class MedicationSchedule
-    {
-        // Additional properties or methods can be added here
-        public void InitializeScheduledTimes(DateTime startDate, DateTime endDate, string frequency)
-        {
-            // Create an instance of the schedule generator
-            MedicationScheduleGenerator scheduleGenerator = new MedicationScheduleGenerator();
-            List<DateTime> scheduledTimes = scheduleGenerator.GenerateScheduledTimes(startDate, endDate, frequency);
-            
-            foreach (var scheduledTime in scheduledTimes)
-            {
-                // Assuming you have a collection to hold the scheduled times
-                // If you don't have this, consider creating a new collection in this class
-                // or handle this logic outside of this partial class
+	public class MedicationScheduleGenerator
+	{
+		public List<DateTime> GenerateScheduledTimes(DateTime startDate, DateTime endDate, string frequency)
+		{
+			List<DateTime> scheduledTimes = new List<DateTime>();
 
-                // Here, you might want to create new instances of the MedicationSchedule
-                // or another related entity to store these scheduled times.
-                MedicationSchedule newSchedule = new MedicationSchedule
-                {
-                    ScheduledTime = scheduledTime,
-                    MedicationID = this.MedicationID, // Ensure this is set appropriately
-                    Status = "Pending", // Default status
-                    CreatedAt = DateTime.Now
-                };
+			// Define times for morning, midday, and evening
+			TimeSpan morningTime = new TimeSpan(8, 0, 0);   // 8:00 AM
+			TimeSpan middayTime = new TimeSpan(12, 0, 0);   // 12:00 PM
+			TimeSpan eveningTime = new TimeSpan(18, 0, 0);  // 6:00 PM
 
-                // Here, you might add this newSchedule to a collection, 
-                // or handle it as needed in your application logic.
-            }
-        }
-    }
+			// Split the frequency string (format: "1-0-1")
+			string[] parts = frequency.Split('-');
+			if (parts.Length != 3)
+			{
+				throw new ArgumentException("Invalid frequency format. Expected '1-0-1'.");
+			}
+
+			bool morningDose = parts[0] == "1";
+			bool middayDose = parts[1] == "1";
+			bool eveningDose = parts[2] == "1";
+
+			// Iterate through each day between startDate and endDate
+			for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+			{
+				if (morningDose)
+				{
+					// Add morning scheduled time
+					scheduledTimes.Add(date.Date + morningTime);
+				}
+				if (middayDose)
+				{
+					// Add midday scheduled time
+					scheduledTimes.Add(date.Date + middayTime);
+				}
+				if (eveningDose)
+				{
+					// Add evening scheduled time
+					scheduledTimes.Add(date.Date + eveningTime);
+				}
+			}
+
+			return scheduledTimes;
+		}
+	}
 }
