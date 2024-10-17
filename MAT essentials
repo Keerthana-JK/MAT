@@ -89,6 +89,29 @@ public class MedicationScheduleViewModel : INotifyPropertyChanged
 
 
 
+namespace MATProject.Entities
+{
+    // Partial class to extend the auto-generated MedicationSchedule class
+    public partial class MedicationSchedule
+    {
+        // New property to hold the MedicationTiming object
+        public MedicationTiming MedicationTiming { get; set; }
+
+        // Method to parse the ScheduledTime string and set MedicationTiming
+        public void SetMedicationTimingFromScheduledTime()
+        {
+            // Check if ScheduledTime is not null or empty
+            if (!string.IsNullOrEmpty(ScheduledTime))
+            {
+                // Initialize the MedicationTiming object
+                MedicationTiming = new MedicationTiming();
+                
+                // Use the SetTiming method from MedicationTiming class
+                MedicationTiming.SetTiming(ScheduledTime);
+            }
+        }
+    }
+}
 
 
 
