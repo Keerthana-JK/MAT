@@ -114,4 +114,38 @@ namespace MATProject.Entities
 }
 
 
+namespace MATProject.Entities
+{
+    public partial class MedicationSchedule
+    {
+        public MedicationTiming MedicationTiming { get; set; }
+
+        // Method to parse the ScheduledTime string and set MedicationTiming
+        public void SetMedicationTimingFromScheduledTime()
+        {
+            // Check if ScheduledTime is not null or empty
+            if (!string.IsNullOrEmpty(ScheduledTime))
+            {
+                try
+                {
+                    // Initialize the MedicationTiming object
+                    MedicationTiming = new MedicationTiming();
+
+                    // Use the SetTiming method from MedicationTiming class
+                    MedicationTiming.SetTiming(ScheduledTime);
+                }
+                catch (Exception ex)
+                {
+                    // Handle any exceptions that might occur during parsing
+                    Console.WriteLine("Error parsing ScheduledTime: " + ex.Message);
+                }
+            }
+            else
+            {
+                // Log or handle the case where ScheduledTime is null or empty
+                Console.WriteLine("ScheduledTime is null or empty for ScheduleID: " + ScheduleID);
+            }
+        }
+    }
+}
 
