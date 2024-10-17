@@ -1,28 +1,48 @@
-public void LoadMedications()
-{
-    // Read all medications from the repository
-    MedicationSchedules = medicationSchedulesRepo.ReadAll();
+using System;
+using System.Collections.Generic;
 
-    foreach (var medication in MedicationSchedules)
+public class MedicationScheduleGenerator
+{
+    public List<DateTime> GenerateScheduledTimes(DateTime startDate, DateTime endDate, string frequency)
     {
-        // Ensure that ScheduledTime is not null or empty before calling SetMedicationTimingFromScheduledTime
-        if (!string.IsNullOrEmpty(medication.ScheduledTime))
+        List<DateTime> scheduledTimes = new List<DateTime>();
+
+        // Define times for morning, midday, and evening
+        TimeSpan morningTime = new TimeSpan(8, 0, 0);   // 8:00 AM
+        TimeSpan middayTime = new TimeSpan(12, 0, 0);   // 12:00 PM
+        TimeSpan eveningTime = new TimeSpan(18, 0, 0);  // 6:00 PM
+
+        // Split the frequency string (format: "1-0-1")
+        string[] parts = frequency.Split('-');
+        if (parts.Length != 3)
         {
-            try
+            throw new ArgumentException("Invalid frequency format. Expected '1-0-1'.");
+        }
+
+        bool morningDose = parts[0] == "1";
+        bool middayDose = parts[1] == "1";
+        bool eveningDose = parts[2] == "1";
+
+        // Iterate through each day between startDate and endDate
+        for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            if (morningDose)
             {
-                // Parse the ScheduledTime string into MedicationTiming
-                medication.SetMedicationTimingFromScheduledTime();
+                // Add morning scheduled time
+                scheduledTimes.Add(date.Date + morningTime);
             }
-            catch (Exception ex)
+            if (middayDose)
             {
-                // Handle any exceptions that occur during the parsing process
-                Console.WriteLine("Error parsing ScheduledTime: " + ex.Message);
+                // Add midday scheduled time
+                scheduledTimes.Add(date.Date + middayTime);
+            }
+            if (eveningDose)
+            {
+                // Add evening scheduled time
+                scheduledTimes.Add(date.Date + eveningTime);
             }
         }
-        else
-        {
-            // Log or handle cases where ScheduledTime is invalid
-            Console.WriteLine($"MedicationSchedule with ScheduleID: {medication.ScheduleID} has an invalid ScheduledTime.");
-        }
+
+        return scheduledTimes;
     }
 }
