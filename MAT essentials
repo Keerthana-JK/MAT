@@ -1,185 +1,33 @@
-SignUpUserControl
------------------
-<UserControl x:Class="MATProject.Pages.SignUpUserControl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MATProject.Pages"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Canvas Background="Lavender">
-        <TextBlock Height="46" Canvas.Left="326" TextWrapping="Wrap" Text="Sign Up" Canvas.Top="18" Width="148" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Georgia"/>
-        <TextBlock x:Name="lblName" Height="26" Canvas.Left="236" TextWrapping="Wrap" Text="Name" Canvas.Top="155" Width="97" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Georgia" FontSize="16"/>
-        <TextBlock x:Name="lblEmail" Height="26" Canvas.Left="236" TextWrapping="Wrap" Text="Email" Canvas.Top="201" Width="97" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Georgia" FontSize="16"/>
-        <TextBlock x:Name="lblPassword" Height="26" Canvas.Left="236" TextWrapping="Wrap" Text="Password" Canvas.Top="249" Width="97" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Georgia" FontSize="16"/>
-        <TextBlock x:Name="lblDateOfBirth" Height="26" Canvas.Left="236" TextWrapping="Wrap" Text="Date  of Birth" Canvas.Top="301" Width="97" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Georgia" FontSize="16"/>
-        <Image Height="73" Canvas.Left="361" Canvas.Top="64" Width="75" Source="/userLoginIcon.png" HorizontalAlignment="Left" VerticalAlignment="Center" Stretch="Fill"/>
-        <TextBlock x:Name="lblMedicalHistory" Height="26" Canvas.Left="236" TextWrapping="Wrap" Text="Medical History" Canvas.Top="359" Width="135" FontFamily="Georgia" FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <TextBox x:Name="txtName" Height="26" Canvas.Left="376" TextWrapping="Wrap" Text="Collin" Canvas.Top="155" Width="214" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <TextBox x:Name="txtEmail" Height="26" Canvas.Left="376" TextWrapping="Wrap" Text="collinfrancy1212@gmail.com" Canvas.Top="198" Width="214" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <TextBox x:Name="txtPassword" Height="26" Canvas.Left="375" TextWrapping="Wrap" Text="123" Canvas.Top="249" Width="215" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <TextBox x:Name="txtDateOfBirth" Height="26" Canvas.Left="375" TextWrapping="Wrap" Text="01-01-2024" Canvas.Top="301" Width="215" HorizontalAlignment="Left" VerticalAlignment="Center" />
-        <TextBox x:Name="txtMedicalHistory" Height="26" Canvas.Left="376" TextWrapping="Wrap" Text="diabetes" Canvas.Top="359" Width="214" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <Button x:Name="btnSignUp" Content="Sign Up" Height="30" Canvas.Left="483" Canvas.Top="403" Width="80" HorizontalAlignment="Left" VerticalAlignment="Center"  Background="CadetBlue" Foreground="White"/>
-    </Canvas>
-</UserControl>
-
-
-LoginUserControl
-----------------
-<UserControl x:Class="MATProject.Pages.LoginUserControl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MATProject.Pages"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Canvas Background="Lavender">
-
-        <TextBlock x:Name="lblLoginPage" Text="Login" HorizontalAlignment="Left" FontSize="36" FontWeight="Bold" FontFamily="Verdana" Height="59" Canvas.Left="313" Canvas.Top="10"/>
-
-        <TextBlock x:Name="lblUsername" HorizontalAlignment="Left" Height="42" Margin="172,245,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" Width="130" FontSize="16" FontFamily="Verdana"/>
-        <TextBlock x:Name="lblPassword" HorizontalAlignment="Left" Height="42" Margin="172,306,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="130" FontSize="16" FontFamily="Verdana"><Run Text="Password"/><LineBreak/><Run/></TextBlock>
-        <TextBox x:Name="txtUserName" HorizontalAlignment="Left" Height="42" Margin="304,236,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="236" FontSize="16"/>
-        <PasswordBox x:Name="txtPassword" HorizontalAlignment="Left" Height="42" Margin="304,304,0,0" VerticalAlignment="Top" Width="236" FontSize="16"/>
-        <Button x:Name="btnLogin" Background="CadetBlue" Content="Login" HorizontalAlignment="Left" Height="35" VerticalAlignment="Top" Width="125" FontSize="16" FontFamily="Verdana" Foreground="White" Canvas.Left="277" Canvas.Top="367" Click="btnLogin_Click" />
-
-    </Canvas>
-</UserControl>
-
-UsersRepo.cs
-------------
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MATProject.Repo;
-using MATProject.Entities;
-using System.Collections.ObjectModel;
-
-namespace MATProject.Orm
+private void Login()
 {
-    public class UsersRepo:IUsersRepo
+    try
     {
-		private readonly MatDbEntities _context;
-		private static UsersRepo _instance;
+        // Hash the password (if you're storing hashed passwords)
+        string enteredPasswordHash = CurrentUser.PasswordHash; // Ideally hash it here
+        
+        // Check if any user matches the entered username and password hash
+        var user = Users.FirstOrDefault(u => u.Username == CurrentUser.Username && u.PasswordHash == enteredPasswordHash);
 
-		public bool ValidateUser(string email, string password)
-		{
-            //CODE
-            return _instance.ValidateUser(email, password);//REMOVE THIS
-		}
-		public UsersRepo()
+        if (user != null)
         {
-            _context = new MatDbEntities();
-        }
-
-        public static UsersRepo Instance
-        {
-            get
+            MessageBox.Show("Login successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            // Set the logged-in user
+            CurrentUser = user;
+            
+            // Optionally, close the login window or navigate to the next page
+            if (WindowClose != null)
             {
-                if (_instance == null)
-                {
-                    _instance = new UsersRepo();
-                }
-                return _instance;
+                WindowClose();
             }
         }
-
-        public void AddUser(User user)
+        else
         {
-            _context.Users.Add(user);
-            _context.SaveChanges();
+            MessageBox.Show("Invalid username or password.", "Login Failed", MessageBoxButton.OK, MessageBoxImage.Error);
         }
-
-        public ObservableCollection<User> ReadAll()
-        {
-            return new ObservableCollection<User>(_context.Users.ToList());
-        }
-
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"An error occurred during login: {ex.Message}");
     }
 }
-
-
-UserViewModel.cs
------------------
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MATProject.Commands;
-using MATProject.Orm;
-using System.Windows.Input;
-using System.Windows;
-using MATProject.Repo;
-using MATProject.Entities;
-using System.ComponentModel;
-
-namespace MATProject.ViewModels
-{
-    public class UserViewModel : INotifyPropertyChanged
-    {
-        private string _name;
-        private string _email;
-        private string _password;
-        private UsersRepo _userRepo;
-
-        public UserViewModel()
-        { 
-            _userRepo = new UsersRepo();
-        }
-        public string Name
-        { 
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyChanged(nameof(Name));
-            }
-        }
-		public string Email
-		{
-			get => _email;
-			set
-			{
-				_email = value;
-				OnPropertyChanged(nameof(Email));
-			}
-		}
-		public string Password
-		{
-			get => _password;
-			set
-			{
-				_password = value;
-				OnPropertyChanged(nameof(Password));
-			}
-		}
-
-		public bool Login()
-		{
-			return _userRepo.ValidateUser(Email,Password);
-		}
-
-		public void SignUp()
-		{
-			var user = new User { Name = Name, Email = Email, PasswordHash = Password };
-			_userRepo.AddUser(user);
-		}
-
-		private void OnPropertyChanged(string propertyName)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		public event PropertyChangedEventHandler PropertyChanged;
-	}
-}
-
-
-
