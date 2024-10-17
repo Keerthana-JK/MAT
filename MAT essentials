@@ -1,151 +1,28 @@
-public partial class MedicationSchedule
+public void LoadMedications()
 {
-    // Other properties...
-    
-    public string ScheduledTime { get; set; } // Store the time as a string like "1-0-1"
+    // Read all medications from the repository
+    MedicationSchedules = medicationSchedulesRepo.ReadAll();
 
-    // New property for MedicationTiming object
-    public MedicationTiming MedicationTiming { get; set; }
-
-    // Constructor
-    public MedicationSchedule()
+    foreach (var medication in MedicationSchedules)
     {
-        this.CheckIns = new HashSet<CheckIn>();
-        this.Reminders = new HashSet<Reminder>();
-        MedicationTiming = new MedicationTiming();
-    }
-    
-    // Method to set timing from ScheduledTime string
-    public void SetMedicationTimingFromScheduledTime()
-    {
-        if (!string.IsNullOrEmpty(ScheduledTime))
+        // Ensure that ScheduledTime is not null or empty before calling SetMedicationTimingFromScheduledTime
+        if (!string.IsNullOrEmpty(medication.ScheduledTime))
         {
-            MedicationTiming.SetTiming(ScheduledTime);
-        }
-    }
-}
-
-
-
-
-
-
-
-public class MedicationScheduleViewModel : INotifyPropertyChanged
-{
-    // Properties
-    private ObservableCollection<MedicationSchedule> _medicationSchedule;
-    public ObservableCollection<MedicationSchedule> MedicationSchedules
-    {
-        get => _medicationSchedule;
-        set { _medicationSchedule = value; OnPropertyChanged(nameof(MedicationSchedules)); }
-    }
-
-    private MedicationSchedulesRepo medicationSchedulesRepo;
-
-    // Commands
-    public ICommand MarkAsTakenCommand { get; set; }
-    public ICommand MarkAsMissedCommand { get; set; }
-
-    // Constructor
-    public MedicationScheduleViewModel()
-    {
-        medicationSchedulesRepo = new MedicationSchedulesRepo();
-        MarkAsTakenCommand = new RelayCommand(MarkAsTaken);
-        MarkAsMissedCommand = new RelayCommand(MarkAsMissed);
-        LoadMedications();
-    }
-
-    // Load medications and process the ScheduledTime
-    public void LoadMedications()
-    {
-        MedicationSchedules = medicationSchedulesRepo.ReadAll();
-
-        // Process each medication's timing
-        foreach (var medication in MedicationSchedules)
-        {
-            medication.SetMedicationTimingFromScheduledTime(); // Parse the ScheduledTime string
-        }
-    }
-
-    // Command methods
-    private void MarkAsTaken()
-    {
-        Status = "Taken";
-    }
-
-    private void MarkAsMissed()
-    {
-        Status = "Missed";
-    }
-
-    // INotifyPropertyChanged implementation
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-}
-
-
-
-namespace MATProject.Entities
-{
-    // Partial class to extend the auto-generated MedicationSchedule class
-    public partial class MedicationSchedule
-    {
-        // New property to hold the MedicationTiming object
-        public MedicationTiming MedicationTiming { get; set; }
-
-        // Method to parse the ScheduledTime string and set MedicationTiming
-        public void SetMedicationTimingFromScheduledTime()
-        {
-            // Check if ScheduledTime is not null or empty
-            if (!string.IsNullOrEmpty(ScheduledTime))
+            try
             {
-                // Initialize the MedicationTiming object
-                MedicationTiming = new MedicationTiming();
-                
-                // Use the SetTiming method from MedicationTiming class
-                MedicationTiming.SetTiming(ScheduledTime);
+                // Parse the ScheduledTime string into MedicationTiming
+                medication.SetMedicationTimingFromScheduledTime();
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions that occur during the parsing process
+                Console.WriteLine("Error parsing ScheduledTime: " + ex.Message);
             }
         }
-    }
-}
-
-
-namespace MATProject.Entities
-{
-    public partial class MedicationSchedule
-    {
-        public MedicationTiming MedicationTiming { get; set; }
-
-        // Method to parse the ScheduledTime string and set MedicationTiming
-        public void SetMedicationTimingFromScheduledTime()
+        else
         {
-            // Check if ScheduledTime is not null or empty
-            if (!string.IsNullOrEmpty(ScheduledTime))
-            {
-                try
-                {
-                    // Initialize the MedicationTiming object
-                    MedicationTiming = new MedicationTiming();
-
-                    // Use the SetTiming method from MedicationTiming class
-                    MedicationTiming.SetTiming(ScheduledTime);
-                }
-                catch (Exception ex)
-                {
-                    // Handle any exceptions that might occur during parsing
-                    Console.WriteLine("Error parsing ScheduledTime: " + ex.Message);
-                }
-            }
-            else
-            {
-                // Log or handle the case where ScheduledTime is null or empty
-                Console.WriteLine("ScheduledTime is null or empty for ScheduleID: " + ScheduleID);
-            }
+            // Log or handle cases where ScheduledTime is invalid
+            Console.WriteLine($"MedicationSchedule with ScheduleID: {medication.ScheduleID} has an invalid ScheduledTime.");
         }
     }
 }
-
