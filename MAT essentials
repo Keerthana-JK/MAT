@@ -1,100 +1,171 @@
+<Window x:Class="MATProject.Pages.RemindersAndNotificationsWindow" WindowState="Maximized"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MATProject.Pages"
+        mc:Ignorable="d"
+        Title="RemindersAndNotificationsWindow" Height="450" Width="800" Closing="Window_Closing">
+    <Canvas Height="450" Width="800">
+        <StackPanel Width="800" Height="432" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <!--List of Reminders-->
+            <TextBlock Text="Reminders" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
+            <ListBox x:Name="lstBoxReminder" Height="109" Width="699" ItemsSource="{Binding Reminders}">
+                <StackPanel Height="99" Width="689">
+                    <TextBlock Text="{Binding NotificationType}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Message}" />
+                    <TextBlock Text="{Binding ReminderTime}" />
+                </StackPanel>
+            </ListBox>
+
+            <!--List of Notifications-->
+            <TextBlock Text="Notifications" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
+			<ListBox Height="150" Width="707" ItemsSource="{Binding Notifications}">
+                <StackPanel Height="116" Width="691">
+                    <TextBlock Text="{Binding NotificationType}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Message}" />
+                    <TextBlock Text="{Binding SentAt}" />
+                </StackPanel>
+            </ListBox>
+
+            <!--Settings Section-->
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <TextBlock Text="Frequency:" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
+                <ComboBox x:Name="comboBoxFrequency" SelectedItem="{Binding SelectedFrequency}" Width="100">
+                    <ComboBoxItem Content="Daily"/>
+                    <ComboBoxItem Content="Weekly"/>
+                    <ComboBoxItem Content="Monthly"/>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="10">
+                <TextBlock Text="Preferred Time:" />
+                <TextBox Text="{Binding PreferredTime}" Width="100" />
+            </StackPanel>
+            <Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Width="100" Margin="10" />
+        </StackPanel>
+    </Canvas>
+</Window>
+
+
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MATProject.Orm;
-using MATProject.Repo;
 using MATProject.Entities;
-namespace MATProject.ViewModels
+
+namespace MATProject.Orm
 {
-	public class MedicationScheduleViewModel:INotifyPropertyChanged
+    public class RemindersRepo
     {
-        
+		//instance of EF DbContextclass
+		private readonly MatDbEntities _context;
+		private static MedicationsRepo _instance;
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged(string propertyName)
+		public RemindersRepo()
+		{
+			_context = new MatDbEntities();
+		}
+
+		public ObservableCollection<Reminder> ReadAll()
+		{
+			return new ObservableCollection<Reminder>(_context.Reminders.ToList());
+		}
+	}
+}
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+
+namespace MATProject.Pages
+{
+    /// <summary>
+    /// Interaction logic for RemindersAndNotificationsWindow.xaml
+    /// </summary>
+    public partial class RemindersAndNotificationsWindow : Window
+    {
+        public RemindersAndNotificationsWindow()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            InitializeComponent();
+            DataContext = ViewModelConfig.remindersAndNotificationViewModel;
         }
-        public MedicationScheduleViewModel()
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            LoadMedications();
-
+            e.Cancel = true;
+            this.Hide();
         }
-        public void LoadMedications()
-        {
-            //Medications = MedicationSchedulesRepo.ReadAll();
-
-        }
-
     }
 }
 
 
+
+
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MATProject.Repo;
 using MATProject.Entities;
-using System.Collections.ObjectModel;
-using System.Security.Principal;
 
-
-namespace MATProject.Orm
+namespace MATProject.ViewModels
 {
-    public class MedicationSchedulesRepo:IMedicationSchedulesRepo
+	public class RemindersAndNotificationViewModel : INotifyPropertyChanged
     {
-
-        private readonly MatDbEntities _context;
-        private static MedicationSchedulesRepo _instance;
-		private ObservableCollection<Medication> medications;
-		public MedicationSchedulesRepo()
-        {
-            _context = new MatDbEntities();
-        }
-        public static MedicationSchedulesRepo Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new MedicationSchedulesRepo();
-                }
-                return _instance;
-            }
-        }
-
-        public ObservableCollection<Medication> ReadAll()
-        {
-            return new ObservableCollection<Medication>(_context.Medications.ToList());
+		DashboardViewModel _dashboardViewModel = new DashboardViewModel();
+		private ObservableCollection<Reminder> _reminders;
+		
+		public ObservableCollection<Reminder> Medications
+		{
+			get
+			{
+				return _reminders;
+			}
+			set
+			{
+				_reminders = value;
+				OnPropertyChanged(nameof(Medications));
+			}
 		}
 
-		public void Update(Medication medication)
-		{
-			try
-			{
-				var existingMedication = medications.FirstOrDefault(a => a.MedicationID == medication.MedicationID);
-				if (existingMedication != null)
-				{
-					existingMedication.StartDate = medication.StartDate;
-					existingMedication.EndDate = medication.EndDate;
-					existingMedication.Dosage = medication.Dosage;
-					existingMedication.Frequency = medication.Frequency;
-				}
-				else
-				{
-					throw new Exception("Account doesn't exists");
-				}
-			}
-			catch (Exception ex)
-			{
-				throw ex;
-			}
+		private ObservableCollection<Notification> _notifications;
 
+		public ObservableCollection<Notification> Notifications
+		{
+			get
+			{
+				return _notifications;
+			}
+			set
+			{
+				_notifications = value;
+				OnPropertyChanged(nameof(Notification));
+			}
+		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		private void OnPropertyChanged(string propertyName)
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 	}
 }
+
