@@ -1,227 +1,136 @@
 using System;
-using System.ComponentModel;
-using System.Windows.Input;
-using MATProject.Models;
-using MATProject.Repositories;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace MATProject.ViewModels
+public class RemindersRepo
 {
-    public class PatientProfileViewModel : INotifyPropertyChanged
+    private readonly YourDbContext _context;
+
+    public RemindersRepo(YourDbContext context)
     {
-        private readonly IPatientProfileRepo _patientProfileRepo;
+        _context = context;
+    }
 
-        private string _name;
-        private DateTime? _dateOfBirth;
-        private string _medicalConditions;
-        private string _allergies;
-        private string _emergencyContacts;
+    public List<Reminder> GetRemindersByUserId(int userId)
+    {
+        // Get reminders for a specific user
+        return _context.Reminders
+            .Where(r => r.UserID == userId)
+            .OrderBy(r => r.ScheduledTime) // Adjust as needed
+            .ToList();
+    }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+    public void AddReminder(Reminder reminder)
+    {
+        _context.Reminders.Add(reminder);
+        _context.SaveChanges();
+    }
 
-        public PatientProfileViewModel(IPatientProfileRepo patientProfileRepo)
+    public void UpdateReminder(Reminder reminder)
+    {
+        _context.Reminders.Update(reminder);
+        _context.SaveChanges();
+    }
+
+    public void DeleteReminder(int reminderId)
+    {
+        var reminder = _context.Reminders.Find(reminderId);
+        if (reminder != null)
         {
-            _patientProfileRepo = patientProfileRepo;
-            LoadPatientProfile();
-            SaveCommand = new RelayCommand(SaveProfile, CanSaveProfile);
-        }
-
-        public string Name
-        {
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyChanged(nameof(Name));
-            }
-        }
-
-        public DateTime? DateOfBirth
-        {
-            get => _dateOfBirth;
-            set
-            {
-                _dateOfBirth = value;
-                OnPropertyChanged(nameof(DateOfBirth));
-            }
-        }
-
-        public string MedicalConditions
-        {
-            get => _medicalConditions;
-            set
-            {
-                _medicalConditions = value;
-                OnPropertyChanged(nameof(MedicalConditions));
-            }
-        }
-
-        public string Allergies
-        {
-            get => _allergies;
-            set
-            {
-                _allergies = value;
-                OnPropertyChanged(nameof(Allergies));
-            }
-        }
-
-        public string EmergencyContacts
-        {
-            get => _emergencyContacts;
-            set
-            {
-                _emergencyContacts = value;
-                OnPropertyChanged(nameof(EmergencyContacts));
-            }
-        }
-
-        public ICommand SaveCommand { get; }
-
-        private void LoadPatientProfile()
-        {
-            // Load the patient's profile (e.g., from the database)
-            var profile = _patientProfileRepo.GetPatientProfile();
-
-            Name = profile.Name;
-            DateOfBirth = profile.DateOfBirth;
-            MedicalConditions = profile.MedicalConditions;
-            Allergies = profile.Allergies;
-            EmergencyContacts = profile.EmergencyContacts;
-        }
-
-        private void SaveProfile()
-        {
-            // Update the patient profile in the repository
-            var profile = new PatientProfile
-            {
-                Name = Name,
-                DateOfBirth = DateOfBirth,
-                MedicalConditions = MedicalConditions,
-                Allergies = Allergies,
-                EmergencyContacts = EmergencyContacts
-            };
-
-            _patientProfileRepo.UpdatePatientProfile(profile);
-        }
-
-        private bool CanSaveProfile()
-        {
-            // Validate if the profile can be saved (e.g., required fields)
-            return !string.IsNullOrWhiteSpace(Name) && DateOfBirth != null;
-        }
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            _context.Reminders.Remove(reminder);
+            _context.SaveChanges();
         }
     }
 }
-
 
 
 
 using System;
-using System.Data.SqlClient;
-using MATProject.Models;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace MATProject.Repositories
+public class NotificationsRepo
 {
-    public class PatientProfileRepo : IPatientProfileRepo
+    private readonly YourDbContext _context;
+
+    public NotificationsRepo(YourDbContext context)
     {
-        private readonly string _connectionString;
-
-        public PatientProfileRepo(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        public PatientProfile GetPatientProfile()
-        {
-            // Assume you are fetching a specific patient's profile, e.g., by user ID
-            var patientProfile = new PatientProfile();
-            
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (var command = new SqlCommand("SELECT * FROM Users WHERE UserID = @UserID", connection))
-                {
-                    command.Parameters.AddWithValue("@UserID", /* pass the user ID */ 1);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            patientProfile.Name = reader["Name"].ToString();
-                            patientProfile.DateOfBirth = reader.GetDateTime(reader.GetOrdinal("DateOfBirth"));
-                            patientProfile.MedicalConditions = reader["MedicalHistory"].ToString();
-                            patientProfile.Allergies = reader["Allergies"]?.ToString();
-                            patientProfile.EmergencyContacts = reader["EmergencyContacts"]?.ToString();
-                        }
-                    }
-                }
-            }
-
-            return patientProfile;
-        }
-
-        public void UpdatePatientProfile(PatientProfile profile)
-        {
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (var command = new SqlCommand("UPDATE Users SET Name = @Name, DateOfBirth = @DateOfBirth, MedicalHistory = @MedicalConditions, Allergies = @Allergies, EmergencyContacts = @EmergencyContacts WHERE UserID = @UserID", connection))
-                {
-                    command.Parameters.AddWithValue("@Name", profile.Name);
-                    command.Parameters.AddWithValue("@DateOfBirth", profile.DateOfBirth ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@MedicalConditions", profile.MedicalConditions);
-                    command.Parameters.AddWithValue("@Allergies", profile.Allergies);
-                    command.Parameters.AddWithValue("@EmergencyContacts", profile.EmergencyContacts);
-                    command.Parameters.AddWithValue("@UserID", /* pass the user ID */ 1);
-
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
+        _context = context;
     }
-}
 
-
-using MATProject.Models;
-
-namespace MATProject.Repositories
-{
-    public interface IPatientProfileRepo
+    public List<Notification> GetNotificationsByUserId(int userId)
     {
-        PatientProfile GetPatientProfile();
-        void UpdatePatientProfile(PatientProfile profile);
+        // Get notifications for a specific user
+        return _context.Notifications
+            .Where(n => n.UserID == userId)
+            .OrderByDescending(n => n.CreatedAt) // Adjust ordering as needed
+            .ToList();
+    }
+
+    public void AddNotification(Notification notification)
+    {
+        _context.Notifications.Add(notification);
+        _context.SaveChanges();
+    }
+
+    public void UpdateNotification(Notification notification)
+    {
+        _context.Notifications.Update(notification);
+        _context.SaveChanges();
+    }
+
+    public void DeleteNotification(int notificationId)
+    {
+        var notification = _context.Notifications.Find(notificationId);
+        if (notification != null)
+        {
+            _context.Notifications.Remove(notification);
+            _context.SaveChanges();
+        }
     }
 }
 
 
 
 
-using System;
-using System.Windows.Input;
-
-namespace MATProject.Commands
+public class RemindersAndNotificationsViewModel
 {
-    public class RelayCommand : ICommand
+    private readonly RemindersRepo _remindersRepo;
+    private readonly NotificationsRepo _notificationsRepo;
+
+    public ObservableCollection<Reminder> Reminders { get; set; }
+    public ObservableCollection<Notification> Notifications { get; set; }
+
+    public RemindersAndNotificationsViewModel(RemindersRepo remindersRepo, NotificationsRepo notificationsRepo)
     {
-        private readonly Action _execute;
-        private readonly Func<bool> _canExecute;
+        _remindersRepo = remindersRepo;
+        _notificationsRepo = notificationsRepo;
 
-        public event EventHandler CanExecuteChanged;
-
-        public RelayCommand(Action execute, Func<bool> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object parameter) => _canExecute == null || _canExecute();
-
-        public void Execute(object parameter) => _execute();
-
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        // Load data
+        LoadRemindersAndNotifications();
     }
-}
 
+    private void LoadRemindersAndNotifications()
+    {
+        int userId = GetCurrentUserId(); // You can retrieve this from the current session or authentication
+        var reminders = _remindersRepo.GetRemindersByUserId(userId);
+        var notifications = _notificationsRepo.GetNotificationsByUserId(userId);
+
+        Reminders = new ObservableCollection<Reminder>(reminders);
+        Notifications = new ObservableCollection<Notification>(notifications);
+    }
+
+    public void AddReminder(Reminder reminder)
+    {
+        _remindersRepo.AddReminder(reminder);
+        LoadRemindersAndNotifications(); // Refresh data after add
+    }
+
+    public void AddNotification(Notification notification)
+    {
+        _notificationsRepo.AddNotification(notification);
+        LoadRemindersAndNotifications(); // Refresh data after add
+    }
+
+    // Similarly, you can add Update and Delete methods here.
+}
