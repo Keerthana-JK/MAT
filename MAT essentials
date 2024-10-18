@@ -169,3 +169,18 @@ namespace MATProject.ViewModels
 	}
 }
 
+
+
+
+
+
+<!-- Medication Schedule Section -->
+            <TextBlock Text="Medication Schedule" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
+            <ListBox x:Name="lstBoxMedicationSchedule" Height="150" Width="707" ItemsSource="{Binding MedicationSchedules}">
+                <StackPanel>
+                    <TextBlock Text="{Binding MedicationName}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ScheduledTime}" />
+                    <Button Content="Taken" Command="{Binding MarkAsTakenCommand}" CommandParameter="{Binding}" Width="100"/>
+                    <Button Content="Missed" Command="{Binding MarkAsMissedCommand}" CommandParameter="{Binding}" Width="100"/>
+                </StackPanel>
+            </ListBox>
