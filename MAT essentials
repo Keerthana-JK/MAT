@@ -1,6 +1,3 @@
-MedicationScheduleViewModel
----------------------------
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,167 +7,54 @@ using System.Threading.Tasks;
 using MATProject.Orm;
 using MATProject.Repo;
 using MATProject.Entities;
-using System.Windows.Input;
-using MATProject.Commands;
-using System.Collections.ObjectModel;
-
 namespace MATProject.ViewModels
 {
 	public class MedicationScheduleViewModel:INotifyPropertyChanged
     {
-		private int _scheduleId;
-		private int _medicationId;
-		private string _medicationName; //
-		private DateTime _scheduledTime; //
-		private string _status; //
-		private DateTime _createdAt;
-		private MedicationSchedulesRepo medicationSchedulesRepo;
+        
 
-		public int ScheduleId
-		{
-			get => _scheduleId;
-			set { _scheduleId = value; OnPropertyChanged(nameof(ScheduleId)); }
-		}
-		public int MedicationId
-		{
-			get => _medicationId;
-			set { _medicationId = value; OnPropertyChanged(nameof(MedicationId)); }
-		}
-
-		private ObservableCollection<MedicationSchedule> _medicationSchedule;
-		public ObservableCollection<MedicationSchedule> MedicationSchedules
-		{
-			get
-			{
-				return _medicationSchedule;
-			}
-			set
-			{
-				_medicationSchedule = value;
-				OnPropertyChanged(nameof(MedicationSchedules));
-			}
-		}
-
-		public string MedicationName
-		{
-			get => _medicationName;
-			set { _medicationName = value; OnPropertyChanged(nameof(MedicationName)); }
-		}
-
-		public DateTime ScheduledTime
-		{
-			get => _scheduledTime;
-			set
-			{
-				_scheduledTime = value; OnPropertyChanged(nameof(ScheduledTime));
-			}
-		}
-		public string Status
-		{
-			get => _status;
-			set
-			{
-				_status = value; OnPropertyChanged(nameof(Status));
-			}
-		}
-
-		public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-		public MedicationScheduleViewModel()
+        public MedicationScheduleViewModel()
         {
-			MedicationSchedules = new ObservableCollection<MedicationSchedule>();
-			medicationSchedulesRepo = new MedicationSchedulesRepo();
-			MarkAsTakenCommand = new RelayCommand(MarkAsTaken);
-			MarkAsMissedCommand = new RelayCommand(MarkAsMissed);
-			LoadMedications();
-			LoadMedicationSchedules();
+            LoadMedications();
 
-		}
+        }
         public void LoadMedications()
         {
-			MedicationSchedules = medicationSchedulesRepo.ReadAll();
-		}
+            //Medications = MedicationSchedulesRepo.ReadAll();
 
-		public ICommand MarkAsTakenCommand { get; set; }
-		public ICommand MarkAsMissedCommand { get; set; }
+        }
 
-		private void MarkAsTaken()
-		{
-			Status = "Taken";
-		}
-		private void MarkAsMissed()
-		{
-			Status = "Missed";
-		}
-		public void SetMedicationName(MedicationSchedule schedule, Medication medication)
-		{
-			schedule.MedicationID = medication.MedicationID;
-			string temp = medication.Frequency;
-			//schedule.GenerateScheduledTimes(medication.StartDate, (DateTime)medication.EndDate, medication.Frequency);
-			//schedule.MedicationName = medication.MedicationName;
-			// Save changes to the database
-		}
-
-		private void LoadMedicationSchedules()
-		{
-			MedicationSchedules.Clear();
-			var schedules = medicationSchedulesRepo.ReadAll();
-			foreach (var schedule in schedules)
-			{
-				MedicationSchedules.Add(schedule);
-			}
-		}
-		private void CreateMedication()
-		{
-			// Assuming you have a Medication object to create
-			var medicationSchedule = new MedicationSchedule
-			{
-				Status = this.Status//
-			};
-
-			try
-			{
-				medicationSchedulesRepo.CreateMedicationSchedules(medicationSchedule);
-				LoadMedicationSchedules(); // Reload schedules to reflect the new data
-			}
-			catch (Exception ex)
-			{
-				// Handle exceptions (e.g., log the error)
-				Console.WriteLine($"An error occurred while creating medication: {ex.Message}");
-			}
-		}
-
-
-	}
+    }
 }
 
-
-MedicationScheduleRepo
-----------------------
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using MATProject.Repo;
 using MATProject.Entities;
 using System.Collections.ObjectModel;
+using System.Security.Principal;
+
 
 namespace MATProject.Orm
 {
-    public class MedicationSchedulesRepo : IMedicationSchedulesRepo
+    public class MedicationSchedulesRepo:IMedicationSchedulesRepo
     {
-        private MedicationScheduleGenerator _scheduleGenerator;
+
         private readonly MatDbEntities _context;
         private static MedicationSchedulesRepo _instance;
-        public MedicationSchedulesRepo()
+		private ObservableCollection<Medication> medications;
+		public MedicationSchedulesRepo()
         {
             _context = new MatDbEntities();
-            _scheduleGenerator = new MedicationScheduleGenerator();
         }
         public static MedicationSchedulesRepo Instance
         {
@@ -183,212 +67,34 @@ namespace MATProject.Orm
                 return _instance;
             }
         }
-		public ObservableCollection<MedicationSchedule> ReadAll()
-		{
-			using (var context = new MatDbEntities())
-			{
-				// Use string-based Include
-				var medicationSchedules = context.MedicationSchedules
-					.Include("Medication") //name of the navigation property
-					.ToList();
 
-				return new ObservableCollection<MedicationSchedule>(medicationSchedules);
-			}
+        public ObservableCollection<Medication> ReadAll()
+        {
+            return new ObservableCollection<Medication>(_context.Medications.ToList());
 		}
 
-		//public ObservableCollection<Medication> ReadAll()
-		//{
-
-		//	//  return new ObservableCollection<Medication>(_context.Medications.ToList());
-		//	DateTime currentDate = DateTime.Now;
-		//	var filteredItems = _context.Medications.Where(item => currentDate >= item.StartDate && currentDate <= item.EndDate).ToList();
-		//	if (filteredItems.Any())
-		//	{
-
-		//		foreach (var item in filteredItems)
-		//		{
-
-		//			string frequencyLabel = ConvertFrequencyToLabel(item.Frequency);
-		//			item.Frequency = frequencyLabel;
-		//		}
-
-		//	}
-
-		//	return new ObservableCollection<Medication>(filteredItems);
-
-		//}
-		private static string ConvertFrequencyToLabel(string frequency)
+		public void Update(Medication medication)
 		{
-			string[] parts = frequency.Split('-');
-			List<string> labels = new List<string>();
-
-			if (parts.Length == 3)
+			try
 			{
-				if (parts[0] == "1") labels.Add("Morning");
-				if (parts[1] == "1") labels.Add("Lunch");
-				if (parts[2] == "1") labels.Add("Night");
-			}
-
-			return string.Join(", ", labels);
-		}
-
-		//public void CreateMedicationSchedules(Medication medication)
-		//      {
-		//	// Generate the scheduled times from the medication's startDate, endDate, and frequency
-		//	List<DateTime> scheduledTimes = _scheduleGenerator.GenerateScheduledTimes(medication.StartDate, (DateTime)medication.EndDate, medication.Frequency);
-
-		//	foreach (var scheduledTime in scheduledTimes)
-		//	{
-		//		MedicationSchedule newSchedule = new MedicationSchedule
-		//		{
-		//			MedicationID = medication.MedicationID,
-		//			ScheduledTime = scheduledTime,
-		//			Status = "Pending", // Default status
-		//			CreatedAt = DateTime.Now
-		//		};
-
-		//		// Save newSchedule to the database
-
-		//		 _context.MedicationSchedules.Add(newSchedule);
-		//		 _context.SaveChanges();
-		//	}
-		//}
-
-		public void CreateMedicationSchedules(MedicationSchedule medicationSchedule)
-		{
-			if (medicationSchedule == null)
-			{
-				throw new ArgumentNullException(nameof(medicationSchedule));
-			}
-
-			// Generate the scheduled times
-			//List<DateTime> scheduledTimes = _scheduleGenerator.GenerateScheduledTimes(
-			//	medicationSchedule.StartDate,
-			//	(DateTime)medication.EndDate,
-			//	medication.Frequency
-			//);
-
-			// Create a list to hold new schedules
-			var newSchedules = new List<MedicationSchedule>();
-
-			// Create medication schedules
-			foreach (var scheduledTime in scheduledTimes)
-			{
-				var newSchedule = new MedicationSchedule
+				var existingMedication = medications.FirstOrDefault(a => a.MedicationID == medication.MedicationID);
+				if (existingMedication != null)
 				{
-					MedicationID = medication.MedicationID,
-					ScheduledTime = scheduledTime,
-					Status = "Pending", // Default status
-					CreatedAt = DateTime.Now
-				};
-
-				newSchedules.Add(newSchedule);
-			}
-
-			// Add all new schedules to the context and save changes
-			_context.MedicationSchedules.AddRange(newSchedules);
-			_context.SaveChanges();
-		}
-	}
-}
-
-MedicationScheduleGenerator
----------------------------
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MATProject.Entities
-{
-	public class MedicationScheduleGenerator
-	{
-		public List<DateTime> GenerateScheduledTimes(DateTime startDate, DateTime endDate, string frequency)
-		{
-			List<DateTime> scheduledTimes = new List<DateTime>();
-
-			// Define times for morning, midday, and evening
-			TimeSpan morningTime = new TimeSpan(8, 0, 0);   // 8:00 AM
-			TimeSpan middayTime = new TimeSpan(12, 0, 0);   // 12:00 PM
-			TimeSpan eveningTime = new TimeSpan(18, 0, 0);  // 6:00 PM
-
-			// Split the frequency string (format: "1-0-1")
-			string[] parts = frequency.Split('-');
-			if (parts.Length != 3)
-			{
-				throw new ArgumentException("Invalid frequency format. Expected '1-0-1'.");
-			}
-
-			bool morningDose = parts[0] == "1";
-			bool middayDose = parts[1] == "1";
-			bool eveningDose = parts[2] == "1";
-
-			// Iterate through each day between startDate and endDate
-			for (DateTime date = startDate; date <= endDate; date = date.AddDays(1))
-			{
-				if (morningDose)
-				{
-					// Add morning scheduled time
-					scheduledTimes.Add(date.Date + morningTime);
+					existingMedication.StartDate = medication.StartDate;
+					existingMedication.EndDate = medication.EndDate;
+					existingMedication.Dosage = medication.Dosage;
+					existingMedication.Frequency = medication.Frequency;
 				}
-				if (middayDose)
+				else
 				{
-					// Add midday scheduled time
-					scheduledTimes.Add(date.Date + middayTime);
-				}
-				if (eveningDose)
-				{
-					// Add evening scheduled time
-					scheduledTimes.Add(date.Date + eveningTime);
+					throw new Exception("Account doesn't exists");
 				}
 			}
+			catch (Exception ex)
+			{
+				throw ex;
+			}
 
-			return scheduledTimes;
 		}
-	}
-}
-
-
-MedicationSchedule.cs
-------------------
-
-//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated from a template.
-//
-//     Manual changes to this file may cause unexpected behavior in your application.
-//     Manual changes to this file will be overwritten if the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
-
-namespace MATProject.Entities
-{
-	using System;
-	using System.Collections.Generic;
-	using System.ComponentModel.DataAnnotations;
-	using System.ComponentModel.DataAnnotations.Schema;
-
-	public partial class MedicationSchedule
-	{
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-		public MedicationSchedule()
-		{
-			this.CheckIns = new HashSet<CheckIn>();
-			this.Reminders = new HashSet<Reminder>();
-		}
-		[Key]
-		public int ScheduleID { get; set; }
-		[ForeignKey("Medication")]
-		public Nullable<int> MedicationID { get; set; }
-		public System.DateTime ScheduledTime { get; set; }
-		public string Status { get; set; }
-		public Nullable<System.DateTime> CreatedAt { get; set; }
-
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-		public virtual ICollection<CheckIn> CheckIns { get; set; }
-		public virtual Medication Medication { get; set; }
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-		public virtual ICollection<Reminder> Reminders { get; set; }
 	}
 }
