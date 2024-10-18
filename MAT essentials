@@ -1,114 +1,118 @@
-<Window x:Class="MATProject.Pages.RemindersAndNotificationsWindow" WindowState="Maximized"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MATProject.Pages"
-        mc:Ignorable="d"
-        Title="RemindersAndNotificationsWindow" Height="450" Width="800" Closing="Window_Closing">
-    <Canvas Height="450" Width="800">
-        <StackPanel Width="800" Height="432" HorizontalAlignment="Center" VerticalAlignment="Top">
-            <!--List of Reminders-->
-            <TextBlock Text="Reminders" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
-            <ListBox x:Name="lstBoxReminder" Height="109" Width="699" ItemsSource="{Binding Reminders}">
-                <StackPanel Height="99" Width="689">
-                    <TextBlock Text="{Binding NotificationType}" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding Message}" />
-                    <TextBlock Text="{Binding ReminderTime}" />
-                </StackPanel>
-            </ListBox>
-
-            <!--List of Notifications-->
-            <TextBlock Text="Notifications" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
-			<ListBox Height="150" Width="707" ItemsSource="{Binding Notifications}">
-                <StackPanel Height="116" Width="691">
-                    <TextBlock Text="{Binding NotificationType}" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding Message}" />
-                    <TextBlock Text="{Binding SentAt}" />
-                </StackPanel>
-            </ListBox>
-
-            <!--Settings Section-->
-            <StackPanel Orientation="Horizontal" Margin="10">
-                <TextBlock Text="Frequency:" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
-                <ComboBox x:Name="comboBoxFrequency" SelectedItem="{Binding SelectedFrequency}" Width="100">
-                    <ComboBoxItem Content="Daily"/>
-                    <ComboBoxItem Content="Weekly"/>
-                    <ComboBoxItem Content="Monthly"/>
-                </ComboBox>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="10">
-                <TextBlock Text="Preferred Time:" />
-                <TextBox Text="{Binding PreferredTime}" Width="100" />
-            </StackPanel>
-            <Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Width="100" Margin="10" />
-        </StackPanel>
-    </Canvas>
-</Window>
-
-
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MATProject.Entities;
-
-namespace MATProject.Orm
-{
-    public class RemindersRepo
-    {
-		//instance of EF DbContextclass
-		private readonly MatDbEntities _context;
-		private static MedicationsRepo _instance;
-
-		public RemindersRepo()
-		{
-			_context = new MatDbEntities();
-		}
-
-		public ObservableCollection<Reminder> ReadAll()
-		{
-			return new ObservableCollection<Reminder>(_context.Reminders.ToList());
-		}
-	}
-}
-
-
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+using System.ComponentModel;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using MATProject.Models;
+using MATProject.Repositories;
 
-namespace MATProject.Pages
+namespace MATProject.ViewModels
 {
-    /// <summary>
-    /// Interaction logic for RemindersAndNotificationsWindow.xaml
-    /// </summary>
-    public partial class RemindersAndNotificationsWindow : Window
+    public class PatientProfileViewModel : INotifyPropertyChanged
     {
-        public RemindersAndNotificationsWindow()
+        private readonly IPatientProfileRepo _patientProfileRepo;
+
+        private string _name;
+        private DateTime? _dateOfBirth;
+        private string _medicalConditions;
+        private string _allergies;
+        private string _emergencyContacts;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public PatientProfileViewModel(IPatientProfileRepo patientProfileRepo)
         {
-            InitializeComponent();
-            DataContext = ViewModelConfig.remindersAndNotificationViewModel;
+            _patientProfileRepo = patientProfileRepo;
+            LoadPatientProfile();
+            SaveCommand = new RelayCommand(SaveProfile, CanSaveProfile);
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        public string Name
         {
-            e.Cancel = true;
-            this.Hide();
+            get => _name;
+            set
+            {
+                _name = value;
+                OnPropertyChanged(nameof(Name));
+            }
+        }
+
+        public DateTime? DateOfBirth
+        {
+            get => _dateOfBirth;
+            set
+            {
+                _dateOfBirth = value;
+                OnPropertyChanged(nameof(DateOfBirth));
+            }
+        }
+
+        public string MedicalConditions
+        {
+            get => _medicalConditions;
+            set
+            {
+                _medicalConditions = value;
+                OnPropertyChanged(nameof(MedicalConditions));
+            }
+        }
+
+        public string Allergies
+        {
+            get => _allergies;
+            set
+            {
+                _allergies = value;
+                OnPropertyChanged(nameof(Allergies));
+            }
+        }
+
+        public string EmergencyContacts
+        {
+            get => _emergencyContacts;
+            set
+            {
+                _emergencyContacts = value;
+                OnPropertyChanged(nameof(EmergencyContacts));
+            }
+        }
+
+        public ICommand SaveCommand { get; }
+
+        private void LoadPatientProfile()
+        {
+            // Load the patient's profile (e.g., from the database)
+            var profile = _patientProfileRepo.GetPatientProfile();
+
+            Name = profile.Name;
+            DateOfBirth = profile.DateOfBirth;
+            MedicalConditions = profile.MedicalConditions;
+            Allergies = profile.Allergies;
+            EmergencyContacts = profile.EmergencyContacts;
+        }
+
+        private void SaveProfile()
+        {
+            // Update the patient profile in the repository
+            var profile = new PatientProfile
+            {
+                Name = Name,
+                DateOfBirth = DateOfBirth,
+                MedicalConditions = MedicalConditions,
+                Allergies = Allergies,
+                EmergencyContacts = EmergencyContacts
+            };
+
+            _patientProfileRepo.UpdatePatientProfile(profile);
+        }
+
+        private bool CanSaveProfile()
+        {
+            // Validate if the profile can be saved (e.g., required fields)
+            return !string.IsNullOrWhiteSpace(Name) && DateOfBirth != null;
+        }
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
@@ -117,70 +121,107 @@ namespace MATProject.Pages
 
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MATProject.Entities;
+using System.Data.SqlClient;
+using MATProject.Models;
 
-namespace MATProject.ViewModels
+namespace MATProject.Repositories
 {
-	public class RemindersAndNotificationViewModel : INotifyPropertyChanged
+    public class PatientProfileRepo : IPatientProfileRepo
     {
-		DashboardViewModel _dashboardViewModel = new DashboardViewModel();
-		private ObservableCollection<Reminder> _reminders;
-		
-		public ObservableCollection<Reminder> Medications
-		{
-			get
-			{
-				return _reminders;
-			}
-			set
-			{
-				_reminders = value;
-				OnPropertyChanged(nameof(Medications));
-			}
-		}
+        private readonly string _connectionString;
 
-		private ObservableCollection<Notification> _notifications;
+        public PatientProfileRepo(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
-		public ObservableCollection<Notification> Notifications
-		{
-			get
-			{
-				return _notifications;
-			}
-			set
-			{
-				_notifications = value;
-				OnPropertyChanged(nameof(Notification));
-			}
-		}
+        public PatientProfile GetPatientProfile()
+        {
+            // Assume you are fetching a specific patient's profile, e.g., by user ID
+            var patientProfile = new PatientProfile();
+            
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (var command = new SqlCommand("SELECT * FROM Users WHERE UserID = @UserID", connection))
+                {
+                    command.Parameters.AddWithValue("@UserID", /* pass the user ID */ 1);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            patientProfile.Name = reader["Name"].ToString();
+                            patientProfile.DateOfBirth = reader.GetDateTime(reader.GetOrdinal("DateOfBirth"));
+                            patientProfile.MedicalConditions = reader["MedicalHistory"].ToString();
+                            patientProfile.Allergies = reader["Allergies"]?.ToString();
+                            patientProfile.EmergencyContacts = reader["EmergencyContacts"]?.ToString();
+                        }
+                    }
+                }
+            }
 
-		public event PropertyChangedEventHandler PropertyChanged;
+            return patientProfile;
+        }
 
-		private void OnPropertyChanged(string propertyName)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-	}
+        public void UpdatePatientProfile(PatientProfile profile)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (var command = new SqlCommand("UPDATE Users SET Name = @Name, DateOfBirth = @DateOfBirth, MedicalHistory = @MedicalConditions, Allergies = @Allergies, EmergencyContacts = @EmergencyContacts WHERE UserID = @UserID", connection))
+                {
+                    command.Parameters.AddWithValue("@Name", profile.Name);
+                    command.Parameters.AddWithValue("@DateOfBirth", profile.DateOfBirth ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@MedicalConditions", profile.MedicalConditions);
+                    command.Parameters.AddWithValue("@Allergies", profile.Allergies);
+                    command.Parameters.AddWithValue("@EmergencyContacts", profile.EmergencyContacts);
+                    command.Parameters.AddWithValue("@UserID", /* pass the user ID */ 1);
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+    }
+}
+
+
+using MATProject.Models;
+
+namespace MATProject.Repositories
+{
+    public interface IPatientProfileRepo
+    {
+        PatientProfile GetPatientProfile();
+        void UpdatePatientProfile(PatientProfile profile);
+    }
 }
 
 
 
 
+using System;
+using System.Windows.Input;
 
+namespace MATProject.Commands
+{
+    public class RelayCommand : ICommand
+    {
+        private readonly Action _execute;
+        private readonly Func<bool> _canExecute;
 
-<!-- Medication Schedule Section -->
-            <TextBlock Text="Medication Schedule" FontSize="20" FontFamily="Verdana" FontWeight="Bold"/>
-            <ListBox x:Name="lstBoxMedicationSchedule" Height="150" Width="707" ItemsSource="{Binding MedicationSchedules}">
-                <StackPanel>
-                    <TextBlock Text="{Binding MedicationName}" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding ScheduledTime}" />
-                    <Button Content="Taken" Command="{Binding MarkAsTakenCommand}" CommandParameter="{Binding}" Width="100"/>
-                    <Button Content="Missed" Command="{Binding MarkAsMissedCommand}" CommandParameter="{Binding}" Width="100"/>
-                </StackPanel>
-            </ListBox>
+        public event EventHandler CanExecuteChanged;
+
+        public RelayCommand(Action execute, Func<bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public bool CanExecute(object parameter) => _canExecute == null || _canExecute();
+
+        public void Execute(object parameter) => _execute();
+
+        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+    }
+}
+
