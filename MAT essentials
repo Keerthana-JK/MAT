@@ -1,24 +1,30 @@
-public class LoginService
+public class UserSessionService
 {
-    private readonly UserRepository _userRepository;
+    private static UserSessionService _instance;
 
-    public LoginService(UserRepository userRepository)
+    public int CurrentUserId { get; private set; }
+
+    private UserSessionService() { }
+
+    public static UserSessionService Instance
     {
-        _userRepository = userRepository;
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = new UserSessionService();
+            }
+            return _instance;
+        }
     }
 
-    public bool Login(string email, string password)
+    public void SetCurrentUserId(int userId)
     {
-        var user = _userRepository.GetUserByEmail(email);
+        CurrentUserId = userId;
+    }
 
-        if (user != null && _userRepository.ValidatePassword(user, password))
-        {
-            UserSessionService.Instance.SetCurrentUserId(user.UserID);
-            return true; // Login successful
-        }
-        else
-        {
-            return false; // Login failed
-        }
+    public int GetCurrentUserId()
+    {
+        return CurrentUserId;
     }
 }
