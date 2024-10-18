@@ -1,136 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-public class RemindersRepo
+public class LoginService
 {
-    private readonly YourDbContext _context;
+    private readonly UserRepository _userRepository;
 
-    public RemindersRepo(YourDbContext context)
+    public LoginService(UserRepository userRepository)
     {
-        _context = context;
+        _userRepository = userRepository;
     }
 
-    public List<Reminder> GetRemindersByUserId(int userId)
+    public bool Login(string email, string password)
     {
-        // Get reminders for a specific user
-        return _context.Reminders
-            .Where(r => r.UserID == userId)
-            .OrderBy(r => r.ScheduledTime) // Adjust as needed
-            .ToList();
-    }
+        var user = _userRepository.GetUserByEmail(email);
 
-    public void AddReminder(Reminder reminder)
-    {
-        _context.Reminders.Add(reminder);
-        _context.SaveChanges();
-    }
-
-    public void UpdateReminder(Reminder reminder)
-    {
-        _context.Reminders.Update(reminder);
-        _context.SaveChanges();
-    }
-
-    public void DeleteReminder(int reminderId)
-    {
-        var reminder = _context.Reminders.Find(reminderId);
-        if (reminder != null)
+        if (user != null && _userRepository.ValidatePassword(user, password))
         {
-            _context.Reminders.Remove(reminder);
-            _context.SaveChanges();
+            UserSessionService.Instance.SetCurrentUserId(user.UserID);
+            return true; // Login successful
+        }
+        else
+        {
+            return false; // Login failed
         }
     }
-}
-
-
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-public class NotificationsRepo
-{
-    private readonly YourDbContext _context;
-
-    public NotificationsRepo(YourDbContext context)
-    {
-        _context = context;
-    }
-
-    public List<Notification> GetNotificationsByUserId(int userId)
-    {
-        // Get notifications for a specific user
-        return _context.Notifications
-            .Where(n => n.UserID == userId)
-            .OrderByDescending(n => n.CreatedAt) // Adjust ordering as needed
-            .ToList();
-    }
-
-    public void AddNotification(Notification notification)
-    {
-        _context.Notifications.Add(notification);
-        _context.SaveChanges();
-    }
-
-    public void UpdateNotification(Notification notification)
-    {
-        _context.Notifications.Update(notification);
-        _context.SaveChanges();
-    }
-
-    public void DeleteNotification(int notificationId)
-    {
-        var notification = _context.Notifications.Find(notificationId);
-        if (notification != null)
-        {
-            _context.Notifications.Remove(notification);
-            _context.SaveChanges();
-        }
-    }
-}
-
-
-
-
-public class RemindersAndNotificationsViewModel
-{
-    private readonly RemindersRepo _remindersRepo;
-    private readonly NotificationsRepo _notificationsRepo;
-
-    public ObservableCollection<Reminder> Reminders { get; set; }
-    public ObservableCollection<Notification> Notifications { get; set; }
-
-    public RemindersAndNotificationsViewModel(RemindersRepo remindersRepo, NotificationsRepo notificationsRepo)
-    {
-        _remindersRepo = remindersRepo;
-        _notificationsRepo = notificationsRepo;
-
-        // Load data
-        LoadRemindersAndNotifications();
-    }
-
-    private void LoadRemindersAndNotifications()
-    {
-        int userId = GetCurrentUserId(); // You can retrieve this from the current session or authentication
-        var reminders = _remindersRepo.GetRemindersByUserId(userId);
-        var notifications = _notificationsRepo.GetNotificationsByUserId(userId);
-
-        Reminders = new ObservableCollection<Reminder>(reminders);
-        Notifications = new ObservableCollection<Notification>(notifications);
-    }
-
-    public void AddReminder(Reminder reminder)
-    {
-        _remindersRepo.AddReminder(reminder);
-        LoadRemindersAndNotifications(); // Refresh data after add
-    }
-
-    public void AddNotification(Notification notification)
-    {
-        _notificationsRepo.AddNotification(notification);
-        LoadRemindersAndNotifications(); // Refresh data after add
-    }
-
-    // Similarly, you can add Update and Delete methods here.
 }
