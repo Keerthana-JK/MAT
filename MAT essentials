@@ -1,30 +1,21 @@
-public class UserSessionService
-{
-    private static UserSessionService _instance;
-
-    public int CurrentUserId { get; private set; }
-
-    private UserSessionService() { }
-
-    public static UserSessionService Instance
+ private void UpdateNotification(object parameter)
     {
-        get
+        if (parameter is Notification notification)
         {
-            if (_instance == null)
+            try
             {
-                _instance = new UserSessionService();
+                _notificationsRepo.UpdateNotification(notification);
+                // Optionally refresh the Notifications collection if needed
             }
-            return _instance;
+            catch (Exception ex)
+            {
+                // Handle the exception (e.g., show a message to the user)
+            }
         }
     }
 
-    public void SetCurrentUserId(int userId)
+    private bool CanUpdateNotification(object parameter)
     {
-        CurrentUserId = userId;
+        // Logic to determine if the command can execute
+        return parameter is Notification; // Can execute if a notification is selected
     }
-
-    public int GetCurrentUserId()
-    {
-        return CurrentUserId;
-    }
-}
