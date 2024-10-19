@@ -1,21 +1,189 @@
- private void UpdateNotification(object parameter)
-    {
-        if (parameter is Notification notification)
-        {
-            try
-            {
-                _notificationsRepo.UpdateNotification(notification);
-                // Optionally refresh the Notifications collection if needed
-            }
-            catch (Exception ex)
-            {
-                // Handle the exception (e.g., show a message to the user)
-            }
-        }
+Object-Oriented Programming (OOP) is a programming paradigm based on the concept of "objects," which are instances of classes. It focuses on organizing software design around data (objects) and the methods that operate on that data. The key principles of OOP are encapsulation, abstraction, inheritance, and polymorphism. Let's go in-depth into each of these:
+
+1. Encapsulation
+
+Encapsulation refers to bundling data (variables) and methods (functions) that operate on the data into a single unit, i.e., a class. The key idea is to restrict direct access to some of the object's components to ensure controlled interaction.
+
+Access Modifiers: Encapsulation uses access modifiers such as private, public, and protected to control access to data.
+
+private: The data or method is accessible only within the class.
+
+protected: The data or method is accessible within the class and its subclasses.
+
+public: The data or method is accessible from outside the class.
+
+
+Getters and Setters: These methods allow controlled access to private fields. Getters return the value of a private field, while setters set the value of a private field after performing any necessary validation.
+
+
+Example:
+
+class Person
+{
+    private string name;
+    private int age;
+
+    public string Name 
+    { 
+        get { return name; }
+        set { name = value; }
     }
 
-    private bool CanUpdateNotification(object parameter)
+    public int Age
     {
-        // Logic to determine if the command can execute
-        return parameter is Notification; // Can execute if a notification is selected
+        get { return age; }
+        set 
+        {
+            if (value > 0)
+                age = value;
+        }
     }
+}
+
+Here, name and age are encapsulated, and external access is controlled through properties.
+
+2. Abstraction
+
+Abstraction is the concept of hiding the complex implementation details of a system and exposing only the necessary and relevant functionality. This helps in reducing complexity and focusing on the interactions at a high level rather than internal details.
+
+Abstract Classes: These are classes that cannot be instantiated and are meant to provide a common interface and partial implementation for its derived classes.
+
+Interfaces: Define a contract that classes must follow, but they don't provide any implementation.
+
+
+Example:
+
+abstract class Shape
+{
+    public abstract double GetArea();  // Abstract method
+}
+
+class Circle : Shape
+{
+    public double Radius { get; set; }
+
+    public override double GetArea()
+    {
+        return 3.14 * Radius * Radius;
+    }
+}
+
+class Rectangle : Shape
+{
+    public double Width { get; set; }
+    public double Height { get; set; }
+
+    public override double GetArea()
+    {
+        return Width * Height;
+    }
+}
+
+In this example, the Shape class provides an abstract method GetArea(), and each derived class (Circle and Rectangle) implements its own version of this method. The complexity of calculating the area is abstracted away.
+
+3. Inheritance
+
+Inheritance allows a class to inherit fields and methods from another class. It promotes code reusability and establishes a parent-child relationship between classes.
+
+Base (Parent) Class: A class whose properties and methods are inherited by another class.
+
+Derived (Child) Class: A class that inherits from another class.
+
+
+Inheritance can be single (one class inherits from one class) or multiple (a class inherits from multiple classes, which isn't supported directly in languages like C#).
+
+Example:
+
+class Animal
+{
+    public string Name { get; set; }
+
+    public void Eat()
+    {
+        Console.WriteLine($"{Name} is eating.");
+    }
+}
+
+class Dog : Animal  // Dog inherits from Animal
+{
+    public void Bark()
+    {
+        Console.WriteLine($"{Name} is barking.");
+    }
+}
+
+In this example, Dog inherits the Name property and the Eat method from Animal. It can also have its own methods like Bark.
+
+4. Polymorphism
+
+Polymorphism allows objects to be treated as instances of their parent class, providing the ability to use a single interface to represent different underlying forms (data types). Polymorphism is achieved through method overriding and method overloading.
+
+Method Overriding: Inheritance allows a derived class to provide a specific implementation of a method that is already defined in its base class. This is achieved using the virtual and override keywords.
+
+Method Overloading: Allows multiple methods in the same class to have the same name, but with different parameters (different signatures).
+
+
+Example of Method Overriding:
+
+class Animal
+{
+    public virtual void Speak()
+    {
+        Console.WriteLine("Animal makes a sound");
+    }
+}
+
+class Dog : Animal
+{
+    public override void Speak()
+    {
+        Console.WriteLine("Dog barks");
+    }
+}
+
+class Cat : Animal
+{
+    public override void Speak()
+    {
+        Console.WriteLine("Cat meows");
+    }
+}
+
+Animal myDog = new Dog();
+Animal myCat = new Cat();
+myDog.Speak();  // Output: Dog barks
+myCat.Speak();  // Output: Cat meows
+
+Here, the Speak method is overridden by both Dog and Cat classes. Even though we call Speak() on Animal references, the actual method called is determined by the runtime type of the object (either Dog or Cat).
+
+Example of Method Overloading:
+
+class Calculator
+{
+    public int Add(int a, int b)
+    {
+        return a + b;
+    }
+
+    public double Add(double a, double b)
+    {
+        return a + b;
+    }
+}
+
+Here, the Add method is overloaded, meaning it can accept both integers and doubles.
+
+5. Other OOP Concepts
+
+Constructor: A special method called when an object is instantiated. It initializes object properties.
+
+Destructor: A special method called when an object is destroyed. Used in languages like C++ and implicitly handled in languages like C# (via garbage collection).
+
+Static Members: These belong to the class rather than any instance of the class. They can be accessed without creating an object of the class.
+
+Interface vs Abstract Class: Both allow abstraction, but an interface cannot have any implementation, while an abstract class can have partial implementation. A class can implement multiple interfaces but can inherit only from one abstract class.
+
+
+Summary
+
+OOP organizes code into modular, reusable, and maintainable units through these principles. Proper application of encapsulation, abstraction, inheritance, and polymorphism leads to code that is easier to maintain, extend, and understand. OOP is fundamental in modern software development and is used in many programming languages like C#, Java, Python, and C++.
