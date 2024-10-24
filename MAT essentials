@@ -1,189 +1,326 @@
-Object-Oriented Programming (OOP) is a programming paradigm based on the concept of "objects," which are instances of classes. It focuses on organizing software design around data (objects) and the methods that operate on that data. The key principles of OOP are encapsulation, abstraction, inheritance, and polymorphism. Let's go in-depth into each of these:
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using EmployeeDatabaseApp.Commands;
+using EmployeeDatabaseApp.Models;
 
-1. Encapsulation
-
-Encapsulation refers to bundling data (variables) and methods (functions) that operate on the data into a single unit, i.e., a class. The key idea is to restrict direct access to some of the object's components to ensure controlled interaction.
-
-Access Modifiers: Encapsulation uses access modifiers such as private, public, and protected to control access to data.
-
-private: The data or method is accessible only within the class.
-
-protected: The data or method is accessible within the class and its subclasses.
-
-public: The data or method is accessible from outside the class.
-
-
-Getters and Setters: These methods allow controlled access to private fields. Getters return the value of a private field, while setters set the value of a private field after performing any necessary validation.
-
-
-Example:
-
-class Person
+namespace EmployeeDatabaseApp.ViewModels
 {
-    private string name;
-    private int age;
+	public delegate void DWindowClose();
+	public class EmployeeViewModel : IDataErrorInfo, INotifyPropertyChanged
+	{
+		public DWindowClose AddEmployeeDialogClose;
+		public DWindowClose EditEmployeeDialogClose;
 
-    public string Name 
-    { 
-        get { return name; }
-        set { name = value; }
-    }
+		private Employee _newEmployee;
 
-    public int Age
-    {
-        get { return age; }
-        set 
-        {
-            if (value > 0)
-                age = value;
-        }
-    }
+		private string _id;
+		private string _name;
+		private string _email;
+		private string _designation;
+		private string _address;
+		private string _photoPath;
+		private string _phoneNumber;
+
+		// Dictionary to hold Validation errors
+		private readonly Dictionary<string, string> _errors = new Dictionary<string, string>();
+
+		public string Id
+		{
+			get { return _id; }
+			set
+			{
+				if (_id != value)
+				{
+					_id = value;
+					ValidateProperty(nameof(Id));
+					OnPropertyChanged(nameof(Id));
+					OnPropertyChanged(nameof(IsButtonEnabled));
+				}
+			}
+		}
+		public string Name
+		{
+			get { return _name; }
+			set
+			{
+				if (_name != value)
+				{
+					_name = value;
+					ValidateProperty(nameof(Name));
+					OnPropertyChanged(nameof(Name));
+					OnPropertyChanged(nameof(IsButtonEnabled));
+				}
+			}
+		}
+		public string Email
+		{
+			get { return _email; }
+			set
+			{
+				if (_email != value)
+				{
+					_email = value;
+					ValidateProperty(nameof(Email));
+					OnPropertyChanged(nameof(Email));
+					OnPropertyChanged(nameof(IsButtonEnabled));
+				}
+			}
+		}
+
+		public string Designation
+		{
+			get { return _designation; }
+			set
+			{
+				if (_designation != value)
+				{
+					_designation = value;
+					ValidateProperty(nameof(Designation));
+					OnPropertyChanged(nameof(Designation));
+					OnPropertyChanged(nameof(IsButtonEnabled));
+				}
+			}
+		}
+		public string Address
+		{
+			get { return _address; }
+			set
+			{
+				_address = value;
+				OnPropertyChanged("Address");
+			}
+		}
+		public string PhotoPath
+		{
+			get { return _photoPath; }
+			set
+			{
+				_photoPath = value;
+				OnPropertyChanged("PhotoPath");
+			}
+		}
+		public string PhoneNumber
+		{
+			get { return _phoneNumber; }
+			set
+			{
+				_phoneNumber = value;
+				ValidateProperty(nameof(PhoneNumber));
+				OnPropertyChanged("PhoneNumber");
+			}
+		}
+		public Employee NewEmployee
+		{
+			get => _newEmployee;
+			set { _newEmployee = value; OnPropertyChanged(nameof(NewEmployee)); }
+		}
+		private Employee _selectedEmployee;
+		public Employee SelectedEmployee
+		{
+			get { return _selectedEmployee; }
+			set
+			{
+				_selectedEmployee = value;
+				OnPropertyChanged(nameof(SelectedEmployee));
+			}
+		}
+
+		private ObservableCollection<Employee> _employees = null;
+		public ObservableCollection<Employee> Employees
+		{
+			get => _employees;
+			set { _employees = value; OnPropertyChanged(nameof(Employees)); }
+		}
+
+		public ICommand CreateCommand { get; }
+		public ICommand UpdateCommand { get; }
+		public ICommand DeleteCommand { get; }
+
+		public EmployeeViewModel()
+		{
+			Employees=new ObservableCollection<Employee>();
+
+			// Initialise with a new Employee object
+			SelectedEmployee = new Employee();
+
+			this.NewEmployee = new Employee { Id="1", Name="Keerthana", Email="kj@gmail.com", 
+				Designation="Software Developer", Address="Ernakulam", PhoneNumber="1234567890"};
+			this.Employees = new ObservableCollection<Employee>
+			{
+				new Employee{Id="1", Name="Keerthana", Email="kj@gmail.com",
+				Designation="Software Developer", Address="Ernakulam", PhoneNumber="1234567890"},
+			};
+			CreateCommand = new RelayCommand(ExecuteCreate, CanExecuteCreate);
+			//TODO*************************************
+			//UpdateCommand = new RelayCommand(Update);
+			//DeleteCommand = new RelayCommand(Delete);
+		}
+
+		public void Create()
+		{
+			string id = "1";
+			if (Employees.Count > 0)
+			{
+				id = Employees[Employees.Count - 1].Id + 1;
+			}
+			Employee newEmployee = new Employee
+			{
+				Id = id,
+				Name = NewEmployee.Name,
+				Email = NewEmployee.Email,
+				PhoneNumber = NewEmployee.PhoneNumber,
+				Address = NewEmployee.Address,
+				Designation = NewEmployee.Designation,
+				ProfileImage = NewEmployee.ProfileImage,
+				PhotoPath = NewEmployee.PhotoPath,
+			};
+			var result = MessageBox.Show(messageBoxText: "Are you sure to create?",
+					caption: "Confirm",
+					button: MessageBoxButton.YesNo,
+					icon: MessageBoxImage.Question);
+			if (result != MessageBoxResult.Yes)
+			{
+				return;
+			}
+			Employees.Add(newEmployee);
+			this.NewEmployee = new Employee {
+				Id = "0",
+				Name = " ",
+				Email = " ",
+				Designation = " ",
+				Address = " ",
+				PhoneNumber = " "
+			};
+			result = MessageBox.Show(messageBoxText: "Created Successfully",
+					caption: "Alert",
+					button: MessageBoxButton.OK,
+					icon: MessageBoxImage.Information);
+			if (AddEmployeeDialogClose != null)
+			{
+				AddEmployeeDialogClose();
+			}
+
+		}
+		public void AddEmployee()
+		{
+			Employees.Add(SelectedEmployee);
+			// Reset after adding
+			SelectedEmployee = new Employee();
+			// Notify UI to refresh the form
+			OnPropertyChanged(nameof(SelectedEmployee));
+		}
+
+		// Profile Image
+		private BitmapImage _profileImage;
+		public BitmapImage ProfileImage
+		{
+			get
+			{
+				return _profileImage;
+			}
+			set
+			{
+				_profileImage = value;
+				OnPropertyChanged("ProfileImage");
+			}
+		}
+
+		// Property to control Add button
+		// Enabled if no error exists
+		public bool IsButtonEnabled => !_errors.Any();
+
+		// Centralized validation method
+		private void ValidateProperty(string propertyName)
+		{
+			string error = string.Empty;
+			switch (propertyName)
+			{
+				case nameof(Id):
+					error = string.IsNullOrEmpty(Id) ? "ID is required" : null;
+					break;
+				case nameof(Name):
+					error = string.IsNullOrEmpty(Name) ? "Name is required" : null;
+					break;
+				case nameof(Email):
+					if (string.IsNullOrEmpty(Email))
+					{
+						error = "Email is required";
+					}
+					else if (!IsValidEmail(Email))
+					{
+						error = "Invalid email format";
+					}
+					break;
+				case nameof(Designation):
+					error = string.IsNullOrEmpty(Designation) ? "Designation is required" : null;
+					break;
+				case nameof(PhoneNumber):
+					if (string.IsNullOrEmpty(PhoneNumber))
+					{
+						error = "Phone Number is required";
+					}
+					else if (!IsValidPhoneNumber(PhoneNumber))
+					{
+						error = "Phone Number must be 10 digits ";
+					}
+					break;
+			}
+
+			if (error != null)
+			{
+				_errors[propertyName] = error;
+			}
+			else
+			{
+				_errors.Remove(propertyName);
+			}
+
+			// Notify UI of error changes
+			OnPropertyChanged(nameof(Error));
+		}
+
+		// Method to validate email format
+		private bool IsValidEmail(string email)
+		{
+			string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+			return Regex.IsMatch(email, emailPattern);
+		}
+
+		// Method to validate phone number format
+		private bool IsValidPhoneNumber(string phoneNumber)
+		{
+			string phonePattern = @"^\d{10}$";
+			return Regex.IsMatch(phoneNumber, phonePattern);
+		}
+
+		public string Error => _errors.Any() ? "Please fix the errors" : null;
+
+
+
+		public string this[string columnName] => _errors.ContainsKey(columnName) ? _errors[columnName] : null;
+
+		// Property changed notification
+		public event PropertyChangedEventHandler PropertyChanged;
+		protected void OnPropertyChanged(string propertyName)
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		// Method to load the image (after file selection)
+		public void LoadImage(string imagePath)
+		{
+			ProfileImage = new BitmapImage(new Uri(imagePath));
+		}
+	}
 }
-
-Here, name and age are encapsulated, and external access is controlled through properties.
-
-2. Abstraction
-
-Abstraction is the concept of hiding the complex implementation details of a system and exposing only the necessary and relevant functionality. This helps in reducing complexity and focusing on the interactions at a high level rather than internal details.
-
-Abstract Classes: These are classes that cannot be instantiated and are meant to provide a common interface and partial implementation for its derived classes.
-
-Interfaces: Define a contract that classes must follow, but they don't provide any implementation.
-
-
-Example:
-
-abstract class Shape
-{
-    public abstract double GetArea();  // Abstract method
-}
-
-class Circle : Shape
-{
-    public double Radius { get; set; }
-
-    public override double GetArea()
-    {
-        return 3.14 * Radius * Radius;
-    }
-}
-
-class Rectangle : Shape
-{
-    public double Width { get; set; }
-    public double Height { get; set; }
-
-    public override double GetArea()
-    {
-        return Width * Height;
-    }
-}
-
-In this example, the Shape class provides an abstract method GetArea(), and each derived class (Circle and Rectangle) implements its own version of this method. The complexity of calculating the area is abstracted away.
-
-3. Inheritance
-
-Inheritance allows a class to inherit fields and methods from another class. It promotes code reusability and establishes a parent-child relationship between classes.
-
-Base (Parent) Class: A class whose properties and methods are inherited by another class.
-
-Derived (Child) Class: A class that inherits from another class.
-
-
-Inheritance can be single (one class inherits from one class) or multiple (a class inherits from multiple classes, which isn't supported directly in languages like C#).
-
-Example:
-
-class Animal
-{
-    public string Name { get; set; }
-
-    public void Eat()
-    {
-        Console.WriteLine($"{Name} is eating.");
-    }
-}
-
-class Dog : Animal  // Dog inherits from Animal
-{
-    public void Bark()
-    {
-        Console.WriteLine($"{Name} is barking.");
-    }
-}
-
-In this example, Dog inherits the Name property and the Eat method from Animal. It can also have its own methods like Bark.
-
-4. Polymorphism
-
-Polymorphism allows objects to be treated as instances of their parent class, providing the ability to use a single interface to represent different underlying forms (data types). Polymorphism is achieved through method overriding and method overloading.
-
-Method Overriding: Inheritance allows a derived class to provide a specific implementation of a method that is already defined in its base class. This is achieved using the virtual and override keywords.
-
-Method Overloading: Allows multiple methods in the same class to have the same name, but with different parameters (different signatures).
-
-
-Example of Method Overriding:
-
-class Animal
-{
-    public virtual void Speak()
-    {
-        Console.WriteLine("Animal makes a sound");
-    }
-}
-
-class Dog : Animal
-{
-    public override void Speak()
-    {
-        Console.WriteLine("Dog barks");
-    }
-}
-
-class Cat : Animal
-{
-    public override void Speak()
-    {
-        Console.WriteLine("Cat meows");
-    }
-}
-
-Animal myDog = new Dog();
-Animal myCat = new Cat();
-myDog.Speak();  // Output: Dog barks
-myCat.Speak();  // Output: Cat meows
-
-Here, the Speak method is overridden by both Dog and Cat classes. Even though we call Speak() on Animal references, the actual method called is determined by the runtime type of the object (either Dog or Cat).
-
-Example of Method Overloading:
-
-class Calculator
-{
-    public int Add(int a, int b)
-    {
-        return a + b;
-    }
-
-    public double Add(double a, double b)
-    {
-        return a + b;
-    }
-}
-
-Here, the Add method is overloaded, meaning it can accept both integers and doubles.
-
-5. Other OOP Concepts
-
-Constructor: A special method called when an object is instantiated. It initializes object properties.
-
-Destructor: A special method called when an object is destroyed. Used in languages like C++ and implicitly handled in languages like C# (via garbage collection).
-
-Static Members: These belong to the class rather than any instance of the class. They can be accessed without creating an object of the class.
-
-Interface vs Abstract Class: Both allow abstraction, but an interface cannot have any implementation, while an abstract class can have partial implementation. A class can implement multiple interfaces but can inherit only from one abstract class.
-
-
-Summary
-
-OOP organizes code into modular, reusable, and maintainable units through these principles. Proper application of encapsulation, abstraction, inheritance, and polymorphism leads to code that is easier to maintain, extend, and understand. OOP is fundamental in modern software development and is used in many programming languages like C#, Java, Python, and C++.
