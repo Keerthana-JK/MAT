@@ -1,98 +1,64 @@
-  <Window x:Class="YourNamespace.AddEmployeeWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Add Employee">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using EmployeeDatabaseApp.Models;
+using EmployeeDatabaseApp.ViewModels;
+using Microsoft.Win32;
 
-    <Grid>
-        <!-- ID Field -->
-        <TextBox Text="{Binding ID, UpdateSourceTrigger=PropertyChanged}" 
-                 ToolTip="{Binding (Validation.Errors)[0].ErrorContent, RelativeSource={RelativeSource Self}}" />
-        
-        <!-- Name Field -->
-        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" 
-                 ToolTip="{Binding (Validation.Errors)[0].ErrorContent, RelativeSource={RelativeSource Self}}" />
-        
-        <!-- Email Field -->
-        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
-                 ToolTip="{Binding (Validation.Errors)[0].ErrorContent, RelativeSource={RelativeSource Self}}" />
-        
-        <!-- Designation Field -->
-        <TextBox Text="{Binding Designation, UpdateSourceTrigger=PropertyChanged}" 
-                 ToolTip="{Binding (Validation.Errors)[0].ErrorContent, RelativeSource={RelativeSource Self}}" />
-        
-        <!-- Phone Number Field -->
-        <TextBox Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}" 
-                 ToolTip="{Binding (Validation.Errors)[0].ErrorContent, RelativeSource={RelativeSource Self}}" />
+namespace EmployeeDatabaseApp.Dialogs
+{
+	/// <summary>
+	/// Interaction logic for AddEmployeeDialog.xaml
+	/// </summary>
+	public partial class AddEmployeeDialog : Window
+	{
 
-        <!-- Add Button -->
-        <Button Content="Add" 
-                Command="{Binding CreateCommand}" 
-                IsEnabled="{Binding IsButtonEnabled}" />
-    </Grid>
-</Window>
+		public AddEmployeeDialog()
+		{
+			InitializeComponent();
+			this.DataContext = WindowConfig.employeeViewModel;
+		}
 
+		private void btnLoadPicture_Click(object sender, RoutedEventArgs e)
+		{
+			// Filter to allow only Image files
+			OpenFileDialog openFileDialog = new OpenFileDialog
+			{
+				Filter = "Image files (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*",
+				Title = "Select a Photo"
+			};
 
+			// Show the dialog and check if the user selected a file
+			if (openFileDialog.ShowDialog() == true)
+			{
+				// 
+				BitmapImage bitmap = new BitmapImage(new Uri(openFileDialog.FileName));
+				imgPicture.Source = bitmap;
+				
 
+			}
+		}
 
+		public void WindowClose()
+		{
+			this.Hide();
+		}
 
-
-<Window x:Class="EmployeeApp.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Employee List" Height="400" Width="600">
-    <Window.DataContext>
-        <local:MainWindowViewModel />
-    </Window.DataContext>
-
-    <Grid>
-        <!-- DataGrid to display Employee List -->
-        <DataGrid ItemsSource="{Binding Employees}" AutoGenerateColumns="False" 
-                  CanUserAddRows="False" CanUserDeleteRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
-                <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" />
-                <DataGridTextColumn Header="Designation" Binding="{Binding Designation}" />
-            </DataGrid.Columns>
-
-            <!-- RowStyle with Tooltip -->
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="ToolTip">
-                        <Setter.Value>
-                            <ToolTip>
-                                <StackPanel>
-                                    <!-- Employee ID -->
-                                    <TextBlock Text="Employee ID:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding ID}" />
-
-                                    <!-- Name -->
-                                    <TextBlock Text="Name:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding Name}" />
-
-                                    <!-- Email -->
-                                    <TextBlock Text="Email:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding Email}" />
-
-                                    <!-- Designation -->
-                                    <TextBlock Text="Designation:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding Designation}" />
-
-                                    <!-- Address -->
-                                    <TextBlock Text="Address:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding Address}" />
-
-                                    <!-- Phone Number -->
-                                    <TextBlock Text="Phone Number:" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding PhoneNumber}" />
-
-                                    <!-- Employee Photo -->
-                                    <Image Source="{Binding Photo}" Height="100" Width="100" />
-                                </StackPanel>
-                            </ToolTip>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </DataGrid.RowStyle>
-        </DataGrid>
-    </Grid>
-</Window>
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		{
+			e.Cancel = true;
+			this.Hide();
+		}
+	}
+}
