@@ -1,0 +1,54 @@
+private void Validate()
+{
+	ErrorMessage = string.Empty;
+
+	// Validate EmployeeId
+	if (string.IsNullOrEmpty(NewEmployee.Id))
+	{
+		ErrorMessage += "Employee ID is required.\n";
+	}
+
+	// Validate Name
+	if (string.IsNullOrWhiteSpace(NewEmployee.Name) || NewEmployee.Name.Length < 2)
+	{
+		ErrorMessage += "Name is required and must be at least 2 characters long.\n";
+	}
+
+	// Validate Email
+	if (string.IsNullOrWhiteSpace(NewEmployee.Email) || !IsValidEmail(NewEmployee.Email))
+	{
+		ErrorMessage += "Email is required and must be in a valid format.\n";
+	}
+
+	// Validate Designation
+	if (string.IsNullOrEmpty(NewEmployee.Designation))
+	{
+		ErrorMessage += "Designation is required.\n";
+	}
+
+	// Validate PhoneNumber (optional, 10 digits)
+	if (!string.IsNullOrWhiteSpace(NewEmployee.PhoneNumber))
+	{
+		// Check if phone number is exactly 10 digits
+		if (!IsValidPhoneNumber(NewEmployee.PhoneNumber))
+		{
+			ErrorMessage += "Phone Number must be exactly 10 digits long.\n";
+		}
+	}
+
+	// Validate Address (optional, max length 100)
+	if (!string.IsNullOrEmpty(NewEmployee.Address))
+	{
+		if (NewEmployee.Address.Length > 100)
+		{
+			ErrorMessage += "Address must not exceed 100 characters.\n";
+		}
+	}
+
+	// Validate PhotoPath (optional)
+	if (!string.IsNullOrEmpty(NewEmployee.PhotoPath))
+	{
+		ErrorMessage += "Photo not selected\n";
+	}
+
+}
