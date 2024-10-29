@@ -1,0 +1,25 @@
+/**************************************************************************************************
+ * Project Name    : [Your Project Name]
+ * File Name       : [Current File Name].cs
+ * Description     : [Brief description of what this file/class does]
+ * 
+ * Author          : [Your Name]
+ * Date Created    : [Creation Date (e.g., yyyy-MM-dd)]
+ * 
+ * Revision History:
+ *      Version     Author      Date        Description
+ *      -------     ---------   ----------  ------------------------------------
+ *      1.0         [Your Name] [Date]      Initial version
+ *      1.1         [Other Name] [Date]     [Description of change]
+ * 
+ * Notes           : [Any specific notes, assumptions, or limitations]
+ **************************************************************************************************/
+
+using System;
+using System.Collections.Generic; // Example of imports
+using System.Linq;
+
+namespace YourNamespace
+{
+    // Class definition goes here
+}
