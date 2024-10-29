@@ -54,3 +54,54 @@
 
 
 
+/**************************************************************************************************
+ * Project Name    : Employee Management System
+ * File Name       : RelayCommand.cs
+ * Description     : Implements a relay command that simplifies the ICommand interface for binding 
+ *                   commands in ViewModels. Enables binding of UI actions to methods without 
+ *                   needing custom command classes.
+ * 
+ * Author          : [Your Name]
+ * Date Created    : [yyyy-MM-dd]
+ * 
+ * Revision History:
+ *      Version     Author      Date        Description
+ *      -------     ---------   ----------  ------------------------------------
+ *      1.0         [Your Name] [yyyy-MM-dd] Initial implementation of RelayCommand with Execute
+ *                                           and CanExecute methods.
+ *
+ * Notes           : This class is used in ViewModels to handle button commands and other UI actions
+ *                   in an MVVM-compliant way, supporting parameters and CanExecute logic.
+ **************************************************************************************************/
+
+using System;
+using System.Windows.Input;
+
+namespace EmployeeManagement.Commands
+{
+    public class RelayCommand : ICommand
+    {
+        private readonly Action<object> _execute;
+        private readonly Func<object, bool> _canExecute;
+
+        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _canExecute == null || _canExecute(parameter);
+        }
+
+        public void Execute(object parameter)
+        {
+            _execute(parameter);
+        }
+
+        public event EventHandler CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
