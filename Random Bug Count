@@ -1,0 +1,16 @@
+public static int CountValuesInColumn(string filepath, string columnName, string value)
+		{
+			using (var workbook = new XLWorkbook(filepath))
+			{
+				//Data is in the 5th sheet
+				var worksheet = workbook.Worksheet(5);
+				//Convert column name to index
+				var columnIndex = 29;
+				// value = Random
+				var valueIsRandom = "Random";
+				//Get all values in the column and count matches
+				int count = worksheet.Column(columnIndex).CellsUsed().Count(cell => cell.GetValue<string>().Equals(valueIsRandom, StringComparison.OrdinalIgnoreCase)); //Fetch only used cells in column
+
+				return count;
+			}
+		}
