@@ -5,7 +5,7 @@ public static int CountValuesInColumn(string filepath, string columnName, string
 				//Data is in the 5th sheet
 				var worksheet = workbook.Worksheet(5);
 
-				//Get all values in the column and count matches
+				//Get all "Random" values in the column and count matches
 				int count = worksheet.Column(columnName).CellsUsed().Count(cell => cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase)); //Fetch only used cells in column
 
 				return count;
