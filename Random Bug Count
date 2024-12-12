@@ -1,5 +1,5 @@
-// Get all test case IDs that are not "Random"
-public static List<string> GetTestCaseIdsExcludingRandom(string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue)
+// Get count and list of test case IDs that are not "Random"
+public static (int Count, List<string> TestCaseIds) GetTestCaseIdsExcludingRandom(string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue)
 {
     try
     {
@@ -11,12 +11,13 @@ public static List<string> GetTestCaseIdsExcludingRandom(string filepath, int sh
             var testCaseIdCells = worksheet.Column(testCaseIdColumn).CellsUsed().Skip(1);
 
             // Filter and select IDs that are not equal to the excludeValue (e.g., "Random")
-            var testCaseIds = testCaseIdCells
+            var filteredTestCaseIds = testCaseIdCells
                 .Where(cell => !cell.GetValue<string>().Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
                 .Select(cell => cell.GetValue<string>())
                 .ToList();
 
-            return testCaseIds;
+            // Return the count and the list of IDs
+            return (filteredTestCaseIds.Count, filteredTestCaseIds);
         }
     }
     catch (Exception ex)
