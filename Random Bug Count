@@ -72,3 +72,101 @@ namespace RemarksColumnWpfApp.Model
 		}
 	}
 }
+_-------_----------------_------
+using ClosedXML.Excel;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace RemarksColumnWpfApp.Model
+{
+    public class ExcelHelper
+    {
+        // Count failed test cases
+        public static int FailedTCCount(string filepath, int sheetIndex, string columnName, string value)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
+                    var column = worksheet.Column(columnName).CellsUsed();
+
+                    // Count cells that do not match the value (excluding the header)
+                    return column.Skip(1).Count(cell => 
+                        !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in FailedTCCount: {ex.Message}", ex);
+            }
+        }
+
+        // Count existing open bugs
+        public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string columnName, string value)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
+                    var column = worksheet.Column(columnName).CellsUsed();
+
+                    // Count cells that match the specified value
+                    return column.Skip(1).Count(cell => 
+                        cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in ExistingOpenBugsCount: {ex.Message}", ex);
+            }
+        }
+
+        // Count random bugs
+        public static int RandomBugsCount(string filepath, int sheetIndex, string columnName, string value)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
+                    var column = worksheet.Column(columnName).CellsUsed();
+
+                    // Count cells that exactly match the specified value
+                    return column.Skip(1).Count(cell => 
+                        cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in RandomBugsCount: {ex.Message}", ex);
+            }
+        }
+
+        // Get test case IDs excluding specified value
+        public static List<string> GetTestCaseId(string filepath, int sheetIndex, string columnName, string value)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
+                    var column = worksheet.Column(columnName).CellsUsed();
+
+                    // Return a list of values that do not match the specified value
+                    return column.Skip(1)
+                                 .Where(cell => 
+                                     !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
+                                 .Select(cell => cell.GetValue<string>())
+                                 .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in GetTestCaseId: {ex.Message}", ex);
+            }
+        }
+    }
+}
