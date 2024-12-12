@@ -1,115 +1,82 @@
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 
 namespace RemarksColumnWpfApp.Model
 {
-	public class ExcelHelper
-	{
-		// Failed TC Count
-		// Count failed test cases and get their IDs - Get count and list of test case IDs that are not "Random"
-		public static (int Count, List<string> TestCaseIds) FailedTcIdAndCount(string filepath, int sheetIndex, string columnName, string value)
-		{
-			try
-			{
-				using (var workbook = new XLWorkbook(filepath))
-				{
-					//columnName = "C";
-					var worksheet = workbook.Worksheet(sheetIndex);
+    public class ExcelHelper
+    {
+        // Count failed test cases and get their IDs - Get count and list of test case IDs that are not "Random"
+        public static (int Count, List<string> TestCaseIds) FailedTcIdAndCount(string filepath, int sheetIndex, string columnName, string excludeValue)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
 
-					// Get the cells of the test case ID column, excluding the header
-					var testCaseIdCells = worksheet.Column(columnName).CellsUsed().Skip(1);
+                    // Get the cells of the test case ID column, excluding the header
+                    var testCaseIdCells = worksheet.Column(columnName).CellsUsed().Skip(1);
 
-					// Filter and select IDs that are not equal to the excludeValue (e.g., "Random")
-					var failedTCIds = testCaseIdCells
-						.Where(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
-						.Select(cell => cell.GetValue<string>())
-						.ToList();
+                    // Filter and select IDs that are not equal to the excludeValue (e.g., "Random")
+                    var failedTCIds = testCaseIdCells
+                        .Where(cell => !cell.GetValue<string>().Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
+                        .Select(cell => cell.GetValue<string>())
+                        .ToList();
 
-					// Return the count and the list of IDs
-					return (failedTCIds.Count, failedTCIds);
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in FailedTCCountAndIds: {ex.Message}", ex);
-			}
-		}
+                    // Return the count and the list of IDs
+                    return (failedTCIds.Count, failedTCIds);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
+            }
+        }
 
-		//Existing open bugs count
-		public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string columnName, string value)
-		{
-			try
-			{
-				using (var workbook = new XLWorkbook(filepath))
-				{
-					//Data is in the (sheetIndex)th sheet
-					var worksheet = workbook.Worksheet(sheetIndex);
+        // Count cells that exactly match a specified value in a given column
+        public static int BugsCount(string filepath, int sheetIndex, string columnName, string matchValue)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
 
-					var existingOpenBugsCount = worksheet.Column(columnName).CellsUsed();
-					var result = FailedTcIdAndCount(filepath, sheetIndex, columnName, value);
+                    // Count cells that exactly match the specified value
+                    return worksheet.Column(columnName).CellsUsed().Skip(1).Count(cell =>
+                        cell.GetValue<string>().Equals(matchValue, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in BugsCount: {ex.Message}", ex);
+            }
+        }
 
-					foreach (var tcId in result.failedTCIds)
-					{
-						var existingBugCount = worksheet.Column(columnName).CellsUsed();//Fetch only used cells in column
+        // Get the count of existing open bugs for test case IDs that are not "Random"
+        public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string testCaseIdColumn, string bugStatusColumn, string excludeValue, string bugStatusValue)
+        {
+            try
+            {
+                using (var workbook = new XLWorkbook(filepath))
+                {
+                    var worksheet = workbook.Worksheet(sheetIndex);
 
-						// Count cells that exactly match the specified value
-						return existingBugCount.Skip(1).Count(cell =>
-							!cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
-					}
+                    // Get test case IDs that are not equal to the excludeValue
+                    var (failedCount, failedTCIds) = FailedTcIdAndCount(filepath, sheetIndex, testCaseIdColumn, excludeValue);
 
-					// Count cells that match the specified value
-					return existingOpenBugsCount.Skip(1).Count(cell =>
-						cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in ExistingOpenBugsCount: {ex.Message}", ex);
-			}
-		}
-
-		// Random Bugs Count
-		public static int BugsCount(string filepath, int sheetIndex, string columnName, string value)
-		{
-			try
-			{
-				using (var workbook = new XLWorkbook(filepath))
-				{
-					// Data is in the (sheetIndex)th sheet
-					var worksheet = workbook.Worksheet(sheetIndex);
-
-					// Get all "Random" values in the column and count matches
-					
-					var randomBugCount = worksheet.Column(columnName).CellsUsed();//Fetch only used cells in column
-
-					// Count cells that exactly match the specified value
-					return randomBugCount.Skip(1).Count(cell =>
-						cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in RandomBugsCount: {ex.Message}", ex);
-			}
-		}
-
-		// Get Test Case ID (other than Random)
-		//public static string GetTestCaseId(string filepath, int sheetIndex, string columnName, string value)
-		//{
-		//	using (var workbook = new XLWorkbook(filepath))
-		//	{
-		//		// Data is in the (sheetIndex)th sheet
-		//		var worksheet = workbook.Worksheet(sheetIndex);
-		//		// Get all non-Random values as list
-		//		var TcIds = worksheet.Column(columnName).CellsUsed().Where(cell => !cell.GetValue<string>()
-		//		.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(cell => cell.GetValue<string>());//.ToList();
-
-		//		return TcIds;
-		//	}
-		//}
-	}
+                    // Count rows where the bug status matches for those test case IDs
+                    return worksheet.RowsUsed().Skip(1).Count(row =>
+                        failedTCIds.Contains(row.Cell(testCaseIdColumn).GetValue<string>(), StringComparer.OrdinalIgnoreCase) &&
+                        row.Cell(bugStatusColumn).GetValue<string>().Equals(bugStatusValue, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in ExistingOpenBugsCount: {ex.Message}", ex);
+            }
+        }
+    }
 }
