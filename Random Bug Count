@@ -1,4 +1,15 @@
-public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string columnName, string value)
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using System;
+using System.Linq;
+using System.Windows;
+
+namespace RemarksColumnWpfApp.Model
+{
+	public class ExcelHelper
+	{
+		// Failed TC Count
+		public static int FailedTCCount(string filepath, int sheetIndex, string columnName, string value)
 		{
 			using (var workbook = new XLWorkbook(filepath))
 			{
@@ -6,9 +17,58 @@ public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string 
 				var worksheet = workbook.Worksheet(sheetIndex);
 
 				//Get all "Random" values in the column and count matches
-				var count = worksheet.Column(columnName).CellsUsed().Where(cell => !cell.GetValue<string>()
+				var failedTcCount = worksheet.Column(columnName).CellsUsed().Count(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase)); //Fetch only used cells in column
+				return failedTcCount - 1;
+			}
+		}
+
+		//Existing open bugs count
+		public static int ExistingOpenBugsCount(string filepath, int sheetIndex, string columnName, string value)
+		{
+			using (var workbook = new XLWorkbook(filepath))
+			{
+				//Data is in the (sheetIndex)th sheet
+				var worksheet = workbook.Worksheet(sheetIndex);
+
+				//Get all "Random" values in the column and count matches
+				var count = worksheet.Column(columnName).CellsUsed().Where(cell => !value
 				.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(cell => cell.GetValue<string>()).ToList();
 				int existingOpenBugsCount = count.Count;
 				return existingOpenBugsCount;
 			}
 		}
+
+		// Random Bugs Count
+		public static int RandomBugsCount(string filepath, int sheetIndex, string columnName, string value)
+		{
+			using (var workbook = new XLWorkbook(filepath))
+			{
+				// Data is in the (sheetIndex)th sheet
+				var worksheet = workbook.Worksheet(sheetIndex);
+
+				// Get all "Random" values in the column and count matches
+				var count =  worksheet.Column(columnName).CellsUsed().Count(cell => cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase)); //Fetch only used cells in column
+				
+				// Get all non-Random values as list
+				var TcId = worksheet.Column(columnName).CellsUsed().Where(cell => !cell.GetValue<string>()
+				.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(cell => cell.GetValue<string>()).ToList();
+				return count;
+			}
+		}
+
+		// Get Test Case ID (other than Random)
+		public static List<string> GetTestCaseId(string filepath, int sheetIndex, string columnName, string value)
+		{
+			using (var workbook = new XLWorkbook(filepath))
+			{
+				// Data is in the (sheetIndex)th sheet
+				var worksheet = workbook.Worksheet(sheetIndex);
+				// Get all non-Random values as list
+				var TcIds = worksheet.Column(columnName).CellsUsed().Where(cell => !cell.GetValue<string>()
+				.Equals(value, StringComparison.OrdinalIgnoreCase)).Select(cell => cell.GetValue<string>());//.ToList();
+
+				return TcIds;
+			}
+		}
+	}
+}
