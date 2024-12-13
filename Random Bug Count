@@ -184,3 +184,91 @@ class Program
         }
     }
 }
+
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Windows;
+
+class Program
+{
+    [STAThread]
+    static void Main(string[] args)
+    {
+        try
+        {
+            // File path to the Excel file
+            string filePath = @"C:\path\to\mantis.xlsm";
+
+            // Specify the sheet index, test case ID column, and target column
+            int sheetIndex = 1; // Assuming the sheet is the first one (1-based index)
+            string testCaseIdColumn = "C"; // Column for Test Case IDs
+            string targetColumn = "A"; // Column to fetch corresponding values
+            string targetValue = "Random"; // Value to match
+
+            // Call the method to get the values
+            var randomValuesList = ExcelHelper.GetColumnValuesForMatch(filePath, sheetIndex, testCaseIdColumn, targetValue, targetColumn);
+
+            // Display the values in a MessageBox
+            string message = "Values corresponding to 'Random' rows:\n\n";
+            message += string.Join("\n", randomValuesList);
+            message += $"\n\nTotal Count: {randomValuesList.Count}";
+
+            MessageBox.Show(message, "Random Row Values", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+}
+
+public static class ExcelHelper
+{
+    /// <summary>
+    /// Get values from a specific column where another column matches a target value.
+    /// </summary>
+    /// <param name="filepath">The path to the Excel file.</param>
+    /// <param name="sheetIndex">The sheet index (1-based).</param>
+    /// <param name="matchColumnName">The column to match the target value (e.g., "C").</param>
+    /// <param name="matchValue">The value to match in the match column (e.g., "Random").</param>
+    /// <param name="targetColumnName">The column to fetch the corresponding values from (e.g., "A").</param>
+    /// <returns>A list of values from the target column corresponding to the matched rows.</returns>
+    public static List<string> GetColumnValuesForMatch(string filepath, int sheetIndex, string matchColumnName, string matchValue, string targetColumnName)
+    {
+        try
+        {
+            using (var workbook = new ClosedXML.Excel.XLWorkbook(filepath))
+            {
+                var worksheet = workbook.Worksheet(sheetIndex);
+
+                // Get the column for the match and target
+                var matchColumn = worksheet.Column(matchColumnName).CellsUsed().Skip(1); // Skip header
+                var targetColumn = worksheet.Column(targetColumnName).CellsUsed().Skip(1); // Skip header
+
+                // Collect the corresponding values
+                var matchedValues = new List<string>();
+                foreach (var matchCell in matchColumn)
+                {
+                    if (matchCell.GetValue<string>().Equals(matchValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int rowNumber = matchCell.Address.RowNumber; // Get the row number
+                        var targetCell = targetColumn.FirstOrDefault(cell => cell.Address.RowNumber == rowNumber);
+                        if (targetCell != null)
+                        {
+                            matchedValues.Add(targetCell.GetValue<string>());
+                        }
+                    }
+                }
+
+                return matchedValues;
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error in GetColumnValuesForMatch: {ex.Message}", ex);
+        }
+    }
+}
