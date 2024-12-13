@@ -141,3 +141,46 @@ public class ExcelHelper
         }
     }
 }
+
+
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        try
+        {
+            // File path to the Excel file
+            string filePath = @"C:\path\to\mantis.xlsm";
+
+            // Specify the sheet index, test case ID column, target column, and exclusion value
+            int sheetIndex = 1; // Assuming the sheet is the first one (1-based index)
+            string testCaseIdColumn = "C"; // Column for Test Case IDs
+            string targetColumn = "A"; // Column to fetch corresponding values
+            string excludeValue = "Random"; // Exclude rows with this value in the test case ID column
+
+            // Call the method
+            var result = ExcelHelper.FailedTcIdAndCount(filePath, sheetIndex, testCaseIdColumn, excludeValue, targetColumn);
+
+            // Print the results
+            Console.WriteLine($"Count of Test Case IDs (not '{excludeValue}'): {result.Count}");
+            Console.WriteLine("Test Case IDs:");
+            foreach (var id in result.TestCaseIds)
+            {
+                Console.WriteLine(id);
+            }
+
+            Console.WriteLine("Corresponding Values from Column A:");
+            foreach (var value in result.CorrespondingValues)
+            {
+                Console.WriteLine(value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
