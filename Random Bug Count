@@ -92,3 +92,52 @@ namespace RemarksColumnWpfApp.Model
 		}
 	}
 }
+
+
+public class ExcelHelper
+{
+    // Failed TC Count and Corresponding Values
+    // Count failed test cases, get their IDs, and fetch corresponding values from another column
+    public static (int Count, List<string> TestCaseIds, List<string> CorrespondingValues) FailedTcIdAndCount(
+        string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue, string targetColumn)
+    {
+        try
+        {
+            using (var workbook = new XLWorkbook(filepath))
+            {
+                var worksheet = workbook.Worksheet(sheetIndex);
+
+                // Get the cells of the test case ID column, excluding the header
+                var testCaseIdCells = worksheet.Column(testCaseIdColumn).CellsUsed().Skip(1);
+
+                // Initialize lists to store results
+                var failedTCIds = new List<string>();
+                var correspondingValues = new List<string>();
+
+                // Iterate through each cell in the test case ID column
+                foreach (var cell in testCaseIdCells)
+                {
+                    var testCaseId = cell.GetValue<string>();
+
+                    // If the test case ID is not equal to the excludeValue (e.g., "Random")
+                    if (!testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        failedTCIds.Add(testCaseId);
+
+                        // Fetch the corresponding value from the target column in the same row
+                        var rowNumber = cell.Address.RowNumber;
+                        var correspondingValue = worksheet.Cell(rowNumber, targetColumn).GetValue<string>();
+                        correspondingValues.Add(correspondingValue);
+                    }
+                }
+
+                // Return the count, list of IDs, and corresponding values
+                return (failedTCIds.Count, failedTCIds, correspondingValues);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
+        }
+    }
+}
