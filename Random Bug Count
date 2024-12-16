@@ -1,274 +1,32 @@
-using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-
-namespace RemarksColumnWpfApp.Model
+public static int GetRemainingRowCountAfterExclusion(string filepath1, int sheetIndex1, string columnName1, 
+                                                     string filepath2, int sheetIndex2, string columnName2)
 {
-	public class ExcelHelper
-	{
-		// Failed TC Count
-		// Count failed test cases and get their IDs - Get count and list of test case IDs that are not "Random"
-		public static (int Count, List<string> TestCaseIds) FailedTcIdAndCount(string filepath, int sheetIndex, string columnName, string value)
-		{
-			try
-			{
-				using (var workbook = new XLWorkbook(filepath))
-				{
-					//columnName = "C";
-					var worksheet = workbook.Worksheet(sheetIndex);
-
-					// Get the cells of the test case ID column, excluding the header
-					var testCaseIdCells = worksheet.Column(columnName).CellsUsed().Skip(1);
-
-					// Filter and select IDs that are not equal to the "Random"
-					var failedTCIds = testCaseIdCells
-						.Where(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
-						.Select(cell => cell.GetValue<string>())
-						.ToList();
-
-					// Return the count and the list of IDs
-					return (failedTCIds.Count, failedTCIds);
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in FailedTCCountAndIds: {ex.Message}", ex);
-			}
-		}
-
-		//Existing open bugs count
-		public static int ExistingOpenBugsCount(string filepath1, int sheetIndex1, string columnName1, string filepath2, int sheetIndex2, string columnName2, string value)
-		{
-			try
-			{
-				using (var workbook1 = new XLWorkbook(filepath1)) 
-				using (var workbook2 = new XLWorkbook(filepath2))
-				{
-					//Data is in the (sheetIndex)th sheet
-					var worksheet1 = workbook1.Worksheet(sheetIndex1);
-					var worksheet2 = workbook2.Worksheet(sheetIndex2);
-
-					// Get IDs from the 1st file
-					var ids1 = worksheet1.Column(columnName1).CellsUsed().Skip(1).Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-					// Get IDs from the 2nd file
-					var ids2 = worksheet1.Column(columnName2).CellsUsed().Skip(1).Select(cell => cell.GetValue<string>()).ToList();
-
-					// Count matching IDs between 2 sets
-					return ids2.Count(id => ids1.Contains(id));
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in ExistingOpenBugsCount: {ex.Message}", ex);
-			}
-		}
-
-		// Random Bugs Count
-		public static int BugsCount(string filepath, int sheetIndex, string columnName, string value)
-		{
-			try
-			{
-				using (var workbook = new XLWorkbook(filepath))
-				{
-					// Data is in the (sheetIndex)th sheet
-					var worksheet = workbook.Worksheet(sheetIndex);
-
-					// Get all specified values in the column and count matches
-					var randomBugCount = worksheet.Column(columnName).CellsUsed();//Fetch only used cells in column
-
-					// Count cells that exactly match the specified value
-					return randomBugCount.Skip(1).Count(cell =>
-						cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in RandomBugsCount: {ex.Message}", ex);
-			}
-		}
-	}
-}
-
-
-public class ExcelHelper
-{
-    // Failed TC Count and Corresponding Values
-    // Count failed test cases, get their IDs, and fetch corresponding values from another column
-    public static (int Count, List<string> TestCaseIds, List<string> CorrespondingValues) FailedTcIdAndCount(
-        string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue, string targetColumn)
+    try
     {
-        try
+        using (var workbook1 = new XLWorkbook(filepath1))
+        using (var workbook2 = new XLWorkbook(filepath2))
         {
-            using (var workbook = new XLWorkbook(filepath))
-            {
-                var worksheet = workbook.Worksheet(sheetIndex);
+            // Load the sheets
+            var worksheet1 = workbook1.Worksheet(sheetIndex1);
+            var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-                // Get the cells of the test case ID column, excluding the header
-                var testCaseIdCells = worksheet.Column(testCaseIdColumn).CellsUsed().Skip(1);
+            // Get IDs from f1
+            var ids1 = worksheet1.Column(columnName1).CellsUsed().Skip(1) // Skip header
+                .Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                // Initialize lists to store results
-                var failedTCIds = new List<string>();
-                var correspondingValues = new List<string>();
+            // Get IDs from f2
+            var ids2 = worksheet2.Column(columnName2).CellsUsed().Skip(1) // Skip header
+                .Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                // Iterate through each cell in the test case ID column
-                foreach (var cell in testCaseIdCells)
-                {
-                    var testCaseId = cell.GetValue<string>();
+            // Remove all matching IDs from f1
+            var remainingIds = ids1.Except(ids2);
 
-                    // If the test case ID is not equal to the excludeValue (e.g., "Random")
-                    if (!testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
-                    {
-                        failedTCIds.Add(testCaseId);
-
-                        // Fetch the corresponding value from the target column in the same row
-                        var rowNumber = cell.Address.RowNumber;
-                        var correspondingValue = worksheet.Cell(rowNumber, targetColumn).GetValue<string>();
-                        correspondingValues.Add(correspondingValue);
-                    }
-                }
-
-                // Return the count, list of IDs, and corresponding values
-                return (failedTCIds.Count, failedTCIds, correspondingValues);
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
+            // Return the count of remaining rows in f1
+            return remainingIds.Count();
         }
     }
-}
-
-
-using System;
-using System.Collections.Generic;
-
-class Program
-{
-    static void Main(string[] args)
+    catch (Exception ex)
     {
-        try
-        {
-            // File path to the Excel file
-            string filePath = @"C:\path\to\mantis.xlsm";
-
-            // Specify the sheet index, test case ID column, target column, and exclusion value
-            int sheetIndex = 1; // Assuming the sheet is the first one (1-based index)
-            string testCaseIdColumn = "C"; // Column for Test Case IDs
-            string targetColumn = "A"; // Column to fetch corresponding values
-            string excludeValue = "Random"; // Exclude rows with this value in the test case ID column
-
-            // Call the method
-            var result = ExcelHelper.FailedTcIdAndCount(filePath, sheetIndex, testCaseIdColumn, excludeValue, targetColumn);
-
-            // Print the results
-            Console.WriteLine($"Count of Test Case IDs (not '{excludeValue}'): {result.Count}");
-            Console.WriteLine("Test Case IDs:");
-            foreach (var id in result.TestCaseIds)
-            {
-                Console.WriteLine(id);
-            }
-
-            Console.WriteLine("Corresponding Values from Column A:");
-            foreach (var value in result.CorrespondingValues)
-            {
-                Console.WriteLine(value);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-}
-
-
-
-
-using System;
-using System.Collections.Generic;
-using System.Windows;
-
-class Program
-{
-    [STAThread]
-    static void Main(string[] args)
-    {
-        try
-        {
-            // File path to the Excel file
-            string filePath = @"C:\path\to\mantis.xlsm";
-
-            // Specify the sheet index, test case ID column, and target column
-            int sheetIndex = 1; // Assuming the sheet is the first one (1-based index)
-            string testCaseIdColumn = "C"; // Column for Test Case IDs
-            string targetColumn = "A"; // Column to fetch corresponding values
-            string targetValue = "Random"; // Value to match
-
-            // Call the method to get the values
-            var randomValuesList = ExcelHelper.GetColumnValuesForMatch(filePath, sheetIndex, testCaseIdColumn, targetValue, targetColumn);
-
-            // Display the values in a MessageBox
-            string message = "Values corresponding to 'Random' rows:\n\n";
-            message += string.Join("\n", randomValuesList);
-            message += $"\n\nTotal Count: {randomValuesList.Count}";
-
-            MessageBox.Show(message, "Random Row Values", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-}
-
-public static class ExcelHelper
-{
-    /// <summary>
-    /// Get values from a specific column where another column matches a target value.
-    /// </summary>
-    /// <param name="filepath">The path to the Excel file.</param>
-    /// <param name="sheetIndex">The sheet index (1-based).</param>
-    /// <param name="matchColumnName">The column to match the target value (e.g., "C").</param>
-    /// <param name="matchValue">The value to match in the match column (e.g., "Random").</param>
-    /// <param name="targetColumnName">The column to fetch the corresponding values from (e.g., "A").</param>
-    /// <returns>A list of values from the target column corresponding to the matched rows.</returns>
-    public static List<string> GetColumnValuesForMatch(string filepath, int sheetIndex, string matchColumnName, string matchValue, string targetColumnName)
-    {
-        try
-        {
-            using (var workbook = new ClosedXML.Excel.XLWorkbook(filepath))
-            {
-                var worksheet = workbook.Worksheet(sheetIndex);
-
-                // Get the column for the match and target
-                var matchColumn = worksheet.Column(matchColumnName).CellsUsed().Skip(1); // Skip header
-                var targetColumn = worksheet.Column(targetColumnName).CellsUsed().Skip(1); // Skip header
-
-                // Collect the corresponding values
-                var matchedValues = new List<string>();
-                foreach (var matchCell in matchColumn)
-                {
-                    if (matchCell.GetValue<string>().Equals(matchValue, StringComparison.OrdinalIgnoreCase))
-                    {
-                        int rowNumber = matchCell.Address.RowNumber; // Get the row number
-                        var targetCell = targetColumn.FirstOrDefault(cell => cell.Address.RowNumber == rowNumber);
-                        if (targetCell != null)
-                        {
-                            matchedValues.Add(targetCell.GetValue<string>());
-                        }
-                    }
-                }
-
-                return matchedValues;
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error in GetColumnValuesForMatch: {ex.Message}", ex);
-        }
+        throw new Exception($"Error in GetRemainingRowCountAfterExclusion: {ex.Message}", ex);
     }
 }
