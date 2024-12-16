@@ -1,6 +1,6 @@
-public static int GetRemainingRowCountExcludingMatchesAndBlanks(
+public static int GetRemainingRowCountWithStatusFilter(
     string filepath1, int sheetIndex1, string columnName1,
-    string filepath2, int sheetIndex2, string columnName2)
+    string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
 {
     try
     {
@@ -11,12 +11,17 @@ public static int GetRemainingRowCountExcludingMatchesAndBlanks(
             var worksheet1 = workbook1.Worksheet(sheetIndex1);
             var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-            // Get IDs from the second file (set for faster lookup)
+            // Get IDs from the second file where the Status is "Fail"
             var idsToExclude = worksheet2
-                .Column(columnName2)
-                .CellsUsed()
+                .RowsUsed()
                 .Skip(1) // Skip header
-                .Select(cell => cell.GetValue<string>())
+                .Where(row =>
+                {
+                    var statusCell = row.Cell(statusColumnName);
+                    return statusCell != null && 
+                           statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase);
+                })
+                .Select(row => row.Cell(columnName2).GetValue<string>())
                 .Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blanks
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -34,6 +39,6 @@ public static int GetRemainingRowCountExcludingMatchesAndBlanks(
     }
     catch (Exception ex)
     {
-        throw new Exception($"Error in GetRemainingRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
+        throw new Exception($"Error in GetRemainingRowCountWithStatusFilter: {ex.Message}", ex);
     }
 }
