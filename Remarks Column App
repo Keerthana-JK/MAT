@@ -179,6 +179,7 @@ namespace RemarksColumnWpfApp.Model
 
 
 
+
 DisplayCountViewModel.cs
 ------------------------
 
@@ -301,10 +302,12 @@ namespace RemarksColumnWpfApp.ViewModel
 				message2 += string.Join(", #",randomTcList);
 			}
 
-			//#3 Existing open bugs count
 			columnName = "AC";
 			sheetIndex = 1;
-			if (!string.IsNullOrEmpty(f2) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+			var sheetIndex2 = 7;
+			var columnName2 = "C";
+			//#3 Existing open bugs count
+			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
 			{
 				//var result = ExcelHelper.FailedTcIdAndCount(f1, sheetIndex, columnName, value);
 				//foreach (var id in result.TestCaseIds)
@@ -313,8 +316,7 @@ namespace RemarksColumnWpfApp.ViewModel
 				//	value = id;
 				//	existingOpenBugsCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
 				//}
-				var sheetIndex2 = 5;
-				var columnName2 = "C";
+				//existingOpenBugsCount = ;
 				existingOpenBugsCount = ExcelHelper.ExistingOpenBugsCount(f1, sheetIndex, columnName, f2, sheetIndex2, columnName2, value);
 			}
 
@@ -328,12 +330,21 @@ namespace RemarksColumnWpfApp.ViewModel
 				var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
 				failedTrCount = failedTrList.Count;
 				message3 += string.Join(", ", failedTrList);
+
+				foreach (var failedTr in failedTrList)
+				{
+					//if (failedTr == temp)
+					//{ }
+					//	if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+					//	{
+					//		//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
+					//		var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
+				}
 			}
 
-			MessageBox.Show($"Failed TC count : {failedTcCount}\n {message}\n" +
-				$"Existing open bugs: {existingOpenBugsCount} (Fail TCs: count)  : {failedTcCount}\n\n" + //change var name of failedTcCount
-				$"Random bug : {randomBugCount}\n Bug IDs #{message2}\n\n" +
-				$"Failed TR : {failedTrCount}\n {message3}", "Result", MessageBoxButton.OK, MessageBoxImage.Information);
+			MessageBox.Show($"Failed TCs : {failedTcCount}\n {message}\n" +
+				$"Existing Open bugs: {existingOpenBugsCount} (Fail TCs: {failedTrCount})\n {message3}\n\n" + //change var name of failedTcCount
+				$"Random bugs : {randomBugCount}\n #{message2}\n\n", "Result", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 	}
 }
