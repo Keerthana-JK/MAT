@@ -242,6 +242,7 @@ namespace RemarksColumnWpfApp.ViewModel
 		public int failedTcCount = 0;
 		public int existingOpenBugsCount = 0;
 		public int randomBugCount = 0;
+		public int failedTrCount = 0;
 
 		// File with Bug ID and Test Case ID
 		//public readonly string f1 = @"C:\Users\2021454\Downloads\Set1-buglist from mantis in Excel format.xlsm";
@@ -253,15 +254,22 @@ namespace RemarksColumnWpfApp.ViewModel
 
 
 		// Column containing Test Case IDs
-		public string columnName = "AC";
-		public string value = "Random";
-		public int sheetIndex = 1;
-		string targetColumn = "A"; // Column to fetch corresponding values
+		public string columnName = "";
+		public string value = "";
+		public int sheetIndex = 0;
+		string targetColumn = ""; // Column to fetch corresponding values
 
 		private void CountValues(object parameter)
 		{
+			// Column containing Test Case IDs
+			columnName = "AC";
+			value = "Random";
+			sheetIndex = 1;
+			targetColumn = "A"; // Column to fetch corresponding values
+
 			string message = ""; 
 			string message2 = "";
+			string message3 = "";
 			// #1 Failed TC count
 			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
 			{
@@ -279,7 +287,7 @@ namespace RemarksColumnWpfApp.ViewModel
 				}
 				foreach (var kvp in TcIdAndBugId)
 				{
-					message += $"{kvp.Key} => #{kvp.Value}\n"; // Failed TC message
+					message += $"{kvp.Key} => Bug ID #{kvp.Value}\n"; // Failed TC message
 				}
 				//MessageBox.Show(message);
 			}
@@ -288,9 +296,9 @@ namespace RemarksColumnWpfApp.ViewModel
 			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex>0)
 			{
 				//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
-				var randomtcList = ExcelHelper.GetBugIdForRandomTcId(f1, sheetIndex, columnName, value, targetColumn);
-				randomBugCount = randomtcList.Count;
-				message2 += string.Join(", #",randomtcList);
+				var randomTcList = ExcelHelper.GetBugIdForRandomTcId(f1, sheetIndex, columnName, value, targetColumn);
+				randomBugCount = randomTcList.Count;
+				message2 += string.Join(", #",randomTcList);
 			}
 
 			//#3 Existing open bugs count
@@ -310,9 +318,22 @@ namespace RemarksColumnWpfApp.ViewModel
 				existingOpenBugsCount = ExcelHelper.ExistingOpenBugsCount(f1, sheetIndex, columnName, f2, sheetIndex2, columnName2, value);
 			}
 
+			sheetIndex = 7;
+			columnName = "H";
+			value = "Fail";
+			targetColumn = "C";
+			if (!string.IsNullOrEmpty(f2) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+			{
+				//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
+				var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
+				failedTrCount = failedTrList.Count;
+				message3 += string.Join(", ", failedTrList);
+			}
+
 			MessageBox.Show($"Failed TC count : {failedTcCount}\n {message}\n" +
 				$"Existing open bugs: {existingOpenBugsCount} (Fail TCs: count)  : {failedTcCount}\n\n" + //change var name of failedTcCount
-				$"Random bug : {randomBugCount}\n #{message2}", "Result", MessageBoxButton.OK, MessageBoxImage.Information);
+				$"Random bug : {randomBugCount}\n Bug IDs #{message2}\n\n" +
+				$"Failed TR : {failedTrCount}\n {message3}", "Result", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 	}
 }
