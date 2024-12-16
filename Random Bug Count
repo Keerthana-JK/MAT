@@ -1,32 +1,39 @@
-public static int GetRemainingRowCountAfterExclusion(string filepath1, int sheetIndex1, string columnName1, 
-                                                     string filepath2, int sheetIndex2, string columnName2)
+public static int GetRemainingRowCountExcludingMatchesAndBlanks(
+    string filepath1, int sheetIndex1, string columnName1,
+    string filepath2, int sheetIndex2, string columnName2)
 {
     try
     {
         using (var workbook1 = new XLWorkbook(filepath1))
         using (var workbook2 = new XLWorkbook(filepath2))
         {
-            // Load the sheets
+            // Load worksheets
             var worksheet1 = workbook1.Worksheet(sheetIndex1);
             var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-            // Get IDs from f1
-            var ids1 = worksheet1.Column(columnName1).CellsUsed().Skip(1) // Skip header
-                .Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Get IDs from the second file (set for faster lookup)
+            var idsToExclude = worksheet2
+                .Column(columnName2)
+                .CellsUsed()
+                .Skip(1) // Skip header
+                .Select(cell => cell.GetValue<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blanks
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // Get IDs from f2
-            var ids2 = worksheet2.Column(columnName2).CellsUsed().Skip(1) // Skip header
-                .Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Get IDs from the first file and exclude matches and blanks
+            var remainingRowCount = worksheet1
+                .Column(columnName1)
+                .CellsUsed()
+                .Skip(1) // Skip header
+                .Count(cell => 
+                    !string.IsNullOrWhiteSpace(cell.GetValue<string>()) && // Exclude blanks
+                    !idsToExclude.Contains(cell.GetValue<string>())); // Exclude matches
 
-            // Remove all matching IDs from f1
-            var remainingIds = ids1.Except(ids2);
-
-            // Return the count of remaining rows in f1
-            return remainingIds.Count();
+            return remainingRowCount;
         }
     }
     catch (Exception ex)
     {
-        throw new Exception($"Error in GetRemainingRowCountAfterExclusion: {ex.Message}", ex);
+        throw new Exception($"Error in GetRemainingRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
     }
 }
