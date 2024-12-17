@@ -2,3 +2,82 @@
 - take corresponding bug id
 - take rows having status = fail from Tr(4) 
 - take bug id other than previously obtained bug id, show the count as well
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ClosedXML.Excel;
+
+public static class BugProcessing
+{
+    public static (int tcidCountFromMantis, List<string> bugIdsFromMantis, 
+                   int failedTestCaseCount, List<string> filteredBugIdsFromTR) 
+        ProcessFiles(string mantisFilePath, int mantisSheetIndex, string tcIdColumnName, 
+                     string mantisBugIdColumnName, string trFilePath, int trSheetIndex, 
+                     string trStatusColumnName, string trBugIdColumnName, string excludeValue)
+    {
+        try
+        {
+            // Lists to store results
+            var bugIdsFromMantis = new List<string>();
+            var filteredBugIdsFromTR = new List<string>();
+
+            using (var mantisWorkbook = new XLWorkbook(mantisFilePath))
+            using (var trWorkbook = new XLWorkbook(trFilePath))
+            {
+                // Load worksheets
+                var mantisSheet = mantisWorkbook.Worksheet(mantisSheetIndex);
+                var trSheet = trWorkbook.Worksheet(trSheetIndex);
+
+                // Step 1: Process Mantis File - Get valid tc IDs and bug IDs
+                var tcIdCells = mantisSheet.Column(tcIdColumnName).CellsUsed().Skip(1); // Skip header
+                foreach (var cell in tcIdCells)
+                {
+                    var tcIdValue = cell.GetValue<string>();
+
+                    // Exclude "random" values
+                    if (!string.IsNullOrWhiteSpace(tcIdValue) && 
+                        !tcIdValue.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Add corresponding bug ID from column "C"
+                        var rowNumber = cell.Address.RowNumber;
+                        var bugId = mantisSheet.Cell(rowNumber, mantisBugIdColumnName).GetValue<string>();
+
+                        bugIdsFromMantis.Add(bugId);
+                    }
+                }
+
+                // Count of valid TC IDs from Mantis
+                var tcidCountFromMantis = bugIdsFromMantis.Count;
+
+                // Step 2: Process TR File - Rows where Status = "Fail" and filter Bug IDs
+                var trRows = trSheet.RowsUsed().Skip(1) // Skip header
+                    .Where(row => 
+                        row.Cell(trStatusColumnName).GetValue<string>()
+                        .Equals("Fail", StringComparison.OrdinalIgnoreCase)); // Filter rows with Status = "Fail"
+
+                var failedTestCaseCount = 0;
+
+                foreach (var row in trRows)
+                {
+                    var bugIdFromTR = row.Cell(trBugIdColumnName).GetValue<string>();
+
+                    // Only include bug IDs not matching those from Mantis
+                    if (!string.IsNullOrWhiteSpace(bugIdFromTR) && 
+                        !bugIdsFromMantis.Contains(bugIdFromTR))
+                    {
+                        filteredBugIdsFromTR.Add(bugIdFromTR);
+                        failedTestCaseCount++;
+                    }
+                }
+
+                // Return the results
+                return (tcidCountFromMantis, bugIdsFromMantis, failedTestCaseCount, filteredBugIdsFromTR);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error in ProcessFiles: {ex.Message}", ex);
+        }
+    }
+}
