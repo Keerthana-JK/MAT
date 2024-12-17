@@ -12,3 +12,19 @@
 						})
 						.Where(id => !string.IsNullOrWhiteSpace(id))
 						.ToHashSet(StringComparer.OrdinalIgnoreCase); // Use HashSet for efficient matching
+
+
+
+// Get IDs from File 2 where Status = "Fail"
+var file2Ids = worksheet2
+    .RowsUsed()
+    .Skip(1) // Skip header row
+    .Where(row =>
+    {
+        var statusCell = row.Cell(statusColumnName);
+        return statusCell != null &&
+               statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
+    })
+    .Select(row => row.Cell(columnName2).GetValue<string>()) // Select the ID column
+    .Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
+    .ToHashSet(StringComparer.OrdinalIgnoreCase); // Use HashSet for efficient matching
