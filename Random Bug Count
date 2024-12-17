@@ -1,58 +1,49 @@
-public static int GetExistingBugsRowCountExcludingMatchesAndBlanks(
-			string filepath1, int sheetIndex1, string columnName1,
-			string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
-		{
-			try
-			{
-				using (var workbook1 = new XLWorkbook(filepath1))
-				using (var workbook2 = new XLWorkbook(filepath2))
-				{
-					// Load worksheets
-					var worksheet1 = workbook1.Worksheet(sheetIndex1);
-					var worksheet2 = workbook2.Worksheet(sheetIndex2);
+public static int CalculateExistingBugCount(
+    int failedTcCount,                      // Hardcoded failed TC count
+    string filepath1, int sheetIndex1,      // File 1 path and sheet index
+    string columnName1,                     // Column in File 1 to compare
+    string filepath2, int sheetIndex2,      // File 2 path and sheet index
+    string columnName2)                     // Column in File 2 to compare
+{
+    try
+    {
+        using (var workbook1 = new XLWorkbook(filepath1))
+        using (var workbook2 = new XLWorkbook(filepath2))
+        {
+            // Load worksheets
+            var worksheet1 = workbook1.Worksheet(sheetIndex1);
+            var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-					// Get IDs from the second file (filtered by Status = "Fail") into a set
-					var failedTc = worksheet2
-						.RowsUsed()
-						.Skip(1) // Skip header row
-						.Where(row =>
-						{
-							var statusCell = row.Cell(statusColumnName);
-							return statusCell != null &&
-								   statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
-						})
-						.Select(row => row.Cell(columnName2).GetValue<string>())
-						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
-						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Get IDs from File 1
+            var file1Ids = worksheet1
+                .Column(columnName1)
+                .CellsUsed()
+                .Skip(1) // Skip header
+                .Select(cell => cell.GetValue<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
 
-					// Filter IDs for "Fail" status only
-					var failedTestCaseIdsFiltered = failedTc
-						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blanks
-						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Get IDs from File 2
+            var file2Ids = worksheet2
+                .Column(columnName2)
+                .CellsUsed()
+                .Skip(1) // Skip header
+                .Select(cell => cell.GetValue<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase); // Use HashSet for efficient matching
 
-					// Get IDs from the first file and exclude matches and blanks
-					//var remainingRowCount = worksheet1
-					//	.Column(columnName1)
-					//	.CellsUsed()
-					//	.Skip(1) // Skip header
-					//	.Count(cell =>
-					//		!string.IsNullOrWhiteSpace(cell.GetValue<string>()) && // Exclude blanks
-					//		!failedTc.Contains(cell.GetValue<string>())); // Exclude matches
+            // Count matching IDs between File 1 and File 2
+            int matchingCount = file1Ids.Count(id => file2Ids.Contains(id));
 
-						// Get remaining rows count in worksheet1 where IDs are NOT in the failed test case list
-						var remainingRowCount = worksheet1
-							.Column(columnName1)
-							.CellsUsed()
-							.Skip(1) // Skip header
-							.Count(cell =>
-								!string.IsNullOrWhiteSpace(cell.GetValue<string>()) && // Exclude blanks
-								!failedTestCaseIdsFiltered.Contains(cell.GetValue<string>())); // Exclude failed IDs
+            // Subtract matching count from failedTcCount
+            int existingBugCount = failedTcCount - matchingCount;
 
-					return remainingRowCount;
-				}
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in GetExistingBugsRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
-			}
-		}
+            // Ensure the result is not negative
+            return existingBugCount >= 0 ? existingBugCount : 0;
+        }
+    }
+    catch (Exception ex)
+    {
+        throw new Exception($"Error in CalculateExistingBugCount: {ex.Message}", ex);
+    }
+}
