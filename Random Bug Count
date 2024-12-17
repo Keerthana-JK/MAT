@@ -1,44 +1,44 @@
 public static int GetExistingBugsRowCountExcludingMatchesAndBlanks(
-    string filepath1, int sheetIndex1, string columnName1,
-    string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
-{
-    try
-    {
-        using (var workbook1 = new XLWorkbook(filepath1))
-        using (var workbook2 = new XLWorkbook(filepath2))
-        {
-            // Load worksheets
-            var worksheet1 = workbook1.Worksheet(sheetIndex1);
-            var worksheet2 = workbook2.Worksheet(sheetIndex2);
+			string filepath1, int sheetIndex1, string columnName1,
+			string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
+		{
+			try
+			{
+				using (var workbook1 = new XLWorkbook(filepath1))
+				using (var workbook2 = new XLWorkbook(filepath2))
+				{
+					// Load worksheets
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-            // Get IDs from the second file (filtered by Status = "Fail") into a set
-            var idsToExclude = worksheet2
-                .RowsUsed()
-                .Skip(1) // Skip header row
-                .Where(row =>
-                {
-                    var statusCell = row.Cell(statusColumnName);
-                    return statusCell != null && 
-                           statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
-                })
-                .Select(row => row.Cell(columnName2).GetValue<string>())
-                .Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+					// Get IDs from the second file (filtered by Status = "Fail") into a set
+					var failedTc = worksheet2
+						.RowsUsed()
+						.Skip(1) // Skip header row
+						.Where(row =>
+						{
+							var statusCell = row.Cell(statusColumnName);
+							return statusCell != null &&
+								   statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
+				})
+						.Select(row => row.Cell(columnName2).GetValue<string>())
+						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // Get IDs from the first file and exclude matches and blanks
-            var remainingRowCount = worksheet1
-                .Column(columnName1)
-                .CellsUsed()
-                .Skip(1) // Skip header
-                .Count(cell =>
-                    !string.IsNullOrWhiteSpace(cell.GetValue<string>()) && // Exclude blanks
-                    !idsToExclude.Contains(cell.GetValue<string>())); // Exclude matches
+					// Get IDs from the first file and exclude matches and blanks
+					var remainingRowCount = worksheet1
+						.Column(columnName1)
+						.CellsUsed()
+						.Skip(1) // Skip header
+						.Count(cell =>
+							!string.IsNullOrWhiteSpace(cell.GetValue<string>()) && // Exclude blanks
+							!failedTc.Contains(cell.GetValue<string>())); // Exclude matches
 
-            return remainingRowCount;
-        }
-    }
-    catch (Exception ex)
-    {
-        throw new Exception($"Error in GetExistingBugsRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
-    }
-}
+					return remainingRowCount;
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in GetExistingBugsRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
+			}
+		}
