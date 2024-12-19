@@ -1,49 +1,56 @@
-public static int CalculateExistingBugCount(
-    int failedTrCount,
-    string filepath1, int sheetIndex1, string columnName1,
-    string filepath2, int sheetIndex2, string columnName2)
+public static List<Dictionary<string, string>> ReadFile(string filepath, int sheetIndex = 0)
 {
+    var data = new List<Dictionary<string, string>>();
+    string extension = Path.GetExtension(filepath).ToLower();
+
     try
     {
-        using (var workbook1 = new XLWorkbook(filepath1))
-        using (var workbook2 = new XLWorkbook(filepath2))
+        if (extension == ".xlsx")
         {
-            // Load worksheets
-            var worksheet1 = workbook1.Worksheet(sheetIndex1);
-            var worksheet2 = workbook2.Worksheet(sheetIndex2);
+            using (var workbook = new XLWorkbook(filepath))
+            {
+                var worksheet = workbook.Worksheet(sheetIndex);
+                var headers = worksheet.Row(1).Cells().Select(cell => cell.GetValue<string>()).ToList();
 
-            // Extract test case IDs and corresponding bug IDs from File 1
-            var bugIdColumn = "A"; // Assuming bug ID is in column A
-            var testCaseIdCells = worksheet1.Column(columnName1).CellsUsed().Skip(1); // Exclude header
-            var bugIdCells = worksheet1.Column(bugIdColumn).CellsUsed().Skip(1);      // Exclude header
+                foreach (var row in worksheet.RowsUsed().Skip(1))
+                {
+                    var rowData = new Dictionary<string, string>();
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        rowData[headers[i]] = row.Cell(i + 1).GetValue<string>();
+                    }
+                    data.Add(rowData);
+                }
+            }
+        }
+        else if (extension == ".csv")
+        {
+            var lines = File.ReadAllLines(filepath);
+            if (lines.Length > 0)
+            {
+                var headers = lines[0].Split(',').Select(h => h.Trim()).ToList();
 
-            // Filter test case IDs (exclude "Random") and collect their corresponding bug IDs
-            var file1Ids = testCaseIdCells
-                .Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
-                .Select(cell => cell.GetValue<string>())
-                .ToList();
-
-            var correspondingBugIds = bugIdCells
-                .Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
-                .Select(cell => cell.GetValue<string>())
-                .ToList();
-
-            // Get failed TR IDs and bug IDs from File 2 using the previous function
-            var file2Result = FailedTcBugIdFromTr(filepath2, correspondingBugIds);
-
-            // Match IDs between File 1 and File 2
-            int matchingCount = file2Result.testCaseIds
-                .Count(id => file1Ids.Contains(id));
-
-            // Calculate existing bug count
-            int existingBugCount = failedTrCount - matchingCount;
-
-            // Ensure the result is not negative
-            return existingBugCount >= 0 ? existingBugCount : 0;
+                foreach (var line in lines.Skip(1))
+                {
+                    var values = line.Split(',');
+                    var rowData = new Dictionary<string, string>();
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        rowData[headers[i]] = i < values.Length ? values[i].Trim() : string.Empty;
+                    }
+                    data.Add(rowData);
+                }
+            }
+        }
+        else
+        {
+            throw new NotSupportedException("Only .xlsx and .csv file formats are supported.");
         }
     }
     catch (Exception ex)
     {
-        throw new Exception($"Error in CalculateExistingBugCount: {ex.Message}", ex);
+        throw new Exception($"Error in ReadFile: {ex.Message}", ex);
     }
+
+    return data;
 }
