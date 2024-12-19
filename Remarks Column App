@@ -11,39 +11,9 @@ namespace RemarksColumnWpfApp.Model
 {
 	public class ExcelHelper
 	{
-		//// Failed TC Count
-		//// Count failed test cases and get their IDs - Get count and list of test case IDs that are not "Random"
-		//public static (int Count, List<string> TestCaseIds) FailedTcIdAndCount(string filepath, int sheetIndex, string columnName, string value)
-		//{
-		//	try
-		//	{
-		//		using (var workbook = new XLWorkbook(filepath))
-		//		{
-		//			//columnName = "C";
-		//			var worksheet = workbook.Worksheet(sheetIndex);
-
-		//			// Get the cells of the test case ID column, excluding the header
-		//			var testCaseIdCells = worksheet.Column(columnName).CellsUsed().Skip(1);
-
-		//			// Filter and select IDs that are not equal to the "Random"
-		//			var failedTCIds = testCaseIdCells
-		//				.Where(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
-		//				.Select(cell => cell.GetValue<string>())
-		//				.ToList();
-
-		//			// Return the count and the list of IDs
-		//			return (failedTCIds.Count, failedTCIds);
-		//		}
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		throw new Exception($"Error in FailedTCCountAndIds: {ex.Message}", ex);
-		//	}
-		//}
-
 		// Failed TC Count and Corresponding Values
 		// Count failed test cases, get their IDs, and fetch corresponding values from another column
-		public static (int Count, List<string> TestCaseIds, List<string> CorrespondingValues) FailedTcIdAndCount(
+		public static (int Count, List<string> TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
 			string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue, string targetColumn)
 		{
 			try
@@ -57,7 +27,7 @@ namespace RemarksColumnWpfApp.Model
 
 					// Initialize lists to store results
 					var failedTCIds = new List<string>();
-					var correspondingValues = new List<string>();
+					var correspondingBugIds = new List<string>();
 
 					// Iterate through each cell in the test case ID column
 					foreach (var cell in testCaseIdCells)
@@ -72,12 +42,12 @@ namespace RemarksColumnWpfApp.Model
 							// Fetch the corresponding value from the target column in the same row
 							var rowNumber = cell.Address.RowNumber;
 							var correspondingValue = worksheet.Cell(rowNumber, targetColumn).GetValue<string>();
-							correspondingValues.Add(correspondingValue);
+							correspondingBugIds.Add(correspondingValue);
 						}
 					}
 
 					// Return the count, list of IDs, and corresponding values
-					return (failedTCIds.Count, failedTCIds, correspondingValues);
+					return (failedTCIds.Count, failedTCIds, correspondingBugIds);
 				}
 			}
 			catch (Exception ex)
@@ -114,30 +84,7 @@ namespace RemarksColumnWpfApp.Model
 			}
 		}
 
-		//// Random Bugs Count
-		//public static int BugsCount(string filepath, int sheetIndex, string columnName, string value)
-		//{
-		//	try
-		//	{
-		//		using (var workbook = new XLWorkbook(filepath))
-		//		{
-		//			// Data is in the (sheetIndex)th sheet
-		//			var worksheet = workbook.Worksheet(sheetIndex);
-
-		//			// Get all specified values in the column and count matches
-		//			var randomBugCount = worksheet.Column(columnName).CellsUsed();//Fetch only used cells in column
-
-		//			// Count cells that exactly match the specified value
-		//			return randomBugCount.Skip(1).Count(cell =>
-		//				cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase));
-		//		}
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		throw new Exception($"Error in RandomBugsCount: {ex.Message}", ex);
-		//	}
-		//}
-
+		//Random bug count
 		public static List<string> GetBugIdForRandomTcId(string filepath, int sheetIndex, string matchColumnName, string matchValue, string targetColumnName)
 		{
 			try
@@ -173,6 +120,230 @@ namespace RemarksColumnWpfApp.Model
 				throw new Exception($"Error in GetColumnValuesForMatch: {ex.Message}", ex);
 			}
 		}
+
+		///   //////   ////   ///////
+		public static int GetExistingBugsRowCountExcludingMatchesAndBlanks(
+			string filepath1, int sheetIndex1, string columnName1,
+			string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
+		{
+			try
+			{
+				using (var workbook1 = new XLWorkbook(filepath1))
+				using (var workbook2 = new XLWorkbook(filepath2))
+				{
+					// Load worksheets
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
+
+					// Get IDs from the second file (filtered by Status = "Fail") into a set
+					var failedTc = worksheet2
+						.RowsUsed()
+						.Skip(1) // Skip header row
+						.Where(row =>
+						{
+							var statusCell = row.Cell(statusColumnName);
+							return statusCell != null &&
+								   statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
+						})
+						.Select(row => row.Cell(columnName2).GetValue<string>())
+						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+					// Filter IDs for "Fail" status only
+					var failedTestCaseIdsFiltered = failedTc
+						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blanks
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+					// Get IDs from the first file and exclude matches and blanks
+					//var remainingRowCount = worksheet1
+					//	.Column(columnName1)
+					//	.CellsUsed()
+					//	.Skip(1) // Skip header
+					//	.Count(cell =>
+					//		!string.IsNullOrWhi teSpace(cell.GetValue<string>()) && // Exclude blanks
+					//		!failedTc.Contains(cell.GetValue<string>())); // Exclude matches
+
+					// Get remaining rows count in worksheet1 where IDs are NOT in the failed test case list
+					var remainingRowCount = worksheet2
+						.Column(columnName2)
+						.CellsUsed()
+						.Skip(1) // Skip header
+						.Count(cell =>
+							!string.IsNullOrWhiteSpace(cell.GetValue<string>())); // Exclude failed IDs
+
+					return remainingRowCount;
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in GetExistingBugsRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
+			}
+		}
+
+		public static int CalculateExistingBugCount(
+			int failedTrCount,                      // Hardcoded failed TR count
+			string filepath1, int sheetIndex1,      // File 1 path and sheet index
+			string columnName1,                     // Column in File 1 to compare
+			string filepath2, int sheetIndex2,      // File 2 path and sheet index
+			string columnName2)                     // Column in File 2 to compare
+		{
+			try
+			{
+				using (var workbook1 = new XLWorkbook(filepath1))
+				using (var workbook2 = new XLWorkbook(filepath2))
+				{
+					// Load worksheets
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
+
+					// Get the cells of the test case ID column, excluding the header
+					var bugIdColumn = "A";
+					var testCaseIdCells = worksheet1.Column(columnName1).CellsUsed().Skip(1);
+					var bugIdCells = worksheet1.Column(bugIdColumn).CellsUsed().Skip(1);
+					var value = "Random";
+					// Filter and select IDs that are not equal to the "Random" and store it in file1Ids
+					//var file1Ids = testCaseIdCells
+					//	.Where(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
+					//	.Select(cell => cell.GetValue<string>())
+					//	.ToList(); // get its Bug id
+
+					// Initialize lists to store results
+					//var failedTCIds = new List<string>();
+					//var correspondingBugId = new List<string>();
+
+					//// Iterate through each cell in the test case ID column
+					//foreach (var cell in testCaseIdCells)//file1Ids
+					//{
+					//	var testCaseId = cell.GetValue<string>();
+
+					//	// If the test case ID is not equal to "Random"
+					//	if (!testCaseId.Equals(value, StringComparison.OrdinalIgnoreCase))
+					//	{
+					//		failedTCIds.Add(testCaseId);
+
+					//		// Fetch the corresponding value from the target column in the same row
+					//		var rowNumber = cell.Address.RowNumber;
+					//		var correspondingValue = worksheet1.Cell(rowNumber, columnName1).GetValue<string>();
+					//		correspondingBugId.Add(correspondingValue);
+					//	}
+					//}
+					// Filter test case IDs (exclude "Random") and collect their corresponding bug IDs
+					var file1Ids = testCaseIdCells
+						.Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
+						.Select(cell => cell.GetValue<string>())
+						.ToList();
+
+					var correspondingBugIds = bugIdCells
+						.Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
+						.Select(cell => cell.GetValue<string>())
+						.ToList();
+
+
+					// Return the count, list of IDs, and corresponding values
+					//return (failedTCIds.Count, failedTCIds, correspondingValues);
+
+					var file2Ids = FailedTcBugIdFromTr(filepath2, correspondingBugIds);
+					// // // //
+
+					// Initialize lists to hold bug IDs and test case IDs
+					var bugIds = new List<string>();
+					var testCaseIds = new List<string>();
+
+					string statusColumn = "H";
+					string bugIdColumnFromTr = "L";
+					string testCaseIdColumn = "C";
+					int sheetIndex = 7;
+
+					// Load the Excel file using ClosedXML
+					using (var workbook = new XLWorkbook(filepath2))
+					{
+						var worksheet = workbook.Worksheet(sheetIndex); // Assuming data is in the first worksheet
+						var rows = worksheet.RowsUsed().Skip(1); // Get all used rows
+
+
+						// Loop through rows starting from the second row (skip header)
+						foreach (var row in rows.Skip(1))
+						{
+							var status = row.Cell(statusColumn).GetValue<string>();
+							var bugId = row.Cell(bugIdColumnFromTr).GetValue<string>();
+							var testCaseId = row.Cell(testCaseIdColumn).GetValue<string>();
+
+							// Apply the filtering conditions
+							if (status == "Fail" && !correspondingBugIds.Contains(bugId))
+							{
+								bugIds.Add(bugId);
+								testCaseIds.Add(testCaseId);
+							}
+						}
+					}
+					//var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
+					//failedTrCount = failedTrList.Count;
+
+					var a = file2Ids.rowCount;
+					var b = file2Ids.bugIds.Count;
+					var c = file2Ids.testCaseIds.Count;
+
+					//MessageBox.Show($"{a}\n{b}\n{c}\n");
+					// Count matching IDs between File 1 and File 2
+					int matchingCount = file2Ids.testCaseIds.Count(id => file1Ids.Contains(id));
+
+					// Subtract (count of Tc ids available in both Mantis and Tr) from failedTcCount (count of status = "Fail" in Tr)
+					int existingBugCount = failedTrCount - matchingCount;
+
+					// Ensure the result is not negative
+					return existingBugCount >= 0 ? existingBugCount : 0;
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in CalculateExistingBugCount: {ex.Message}", ex);
+			}
+		}
+
+		// Final 
+		public static (int rowCount, List<string> bugIds, List<string> testCaseIds) FailedTcBugIdFromTr(string filePath, List<string> bugIdsMantis)
+		{
+			// Initialize lists to hold bug IDs and test case IDs
+			var bugIds = new List<string>();
+			var testCaseIds = new List<string>();
+
+			string statusColumn = "H";
+			string bugIdColumn = "L";
+			string testCaseIdColumn = "C";
+			int sheetIndex = 7;
+			try
+			{
+				// Load the Excel file using ClosedXML
+				using (var workbook = new XLWorkbook(filePath))
+				{
+					var worksheet = workbook.Worksheet(sheetIndex); // Assuming data is in the first worksheet
+					var rows = worksheet.RowsUsed().Skip(1); // Get all used rows
+
+
+					// Loop through rows starting from the second row (skip header)
+					foreach (var row in rows.Skip(1))
+					{
+						var status = row.Cell(statusColumn).GetValue<string>();
+						var bugId = row.Cell(bugIdColumn).GetValue<string>();
+						var testCaseId = row.Cell(testCaseIdColumn).GetValue<string>();
+
+						// Apply the filtering conditions
+						if (status == "Fail" && !bugIdsMantis.Contains(bugId))
+						{
+							bugIds.Add(bugId);
+							testCaseIds.Add(testCaseId);
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error processing Excel file: {ex.Message}");
+			}
+
+			// Return the count, bug IDs, and test case IDs
+			return (bugIds.Count, bugIds, testCaseIds);
+		}
 	}
 }
 
@@ -183,168 +354,349 @@ namespace RemarksColumnWpfApp.Model
 DisplayCountViewModel.cs
 ------------------------
 
-using RemarksColumnWpfApp.Commands;
-using RemarksColumnWpfApp.Model;
-using System.ComponentModel;
-using System.Windows;
-using Microsoft.Win32;
-using System.Windows.Input;
-using System.Text;
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using System;
 using System.Collections.Generic;
-using System.Windows.Interop;
+using System.Linq;
+using System.Windows;
 
-namespace RemarksColumnWpfApp.ViewModel
+namespace RemarksColumnWpfApp.Model
 {
-	public class DisplayCountViewModel
+	public class ExcelHelper
 	{
-		//private string _filePath;
-		//private string _filePath2;
-		//private string _columnName;
-		//private string _valueToCount;
-		//private int _count;
-
-		//public string FilePath
-		//{
-		//	get => _filePath;
-		//	set { _filePath = value; OnPropertyChanged(nameof(FilePath)); }
-		//}
-		//public string ColumnName
-		//{
-		//	get => _columnName;
-		//	set { _columnName = value; OnPropertyChanged(nameof(ColumnName)); }
-		//}
-		//public string ValueToCount
-		//{
-		//	get => _valueToCount;
-		//	set { _valueToCount = value; OnPropertyChanged(nameof(ValueToCount)); }
-		//}
-		//public int Count
-		//{
-		//	get => _count;
-		//	set { _count = value; OnPropertyChanged(nameof(Count)); }
-		//}
-
-		// Property changed notification
-		//public event PropertyChangedEventHandler PropertyChanged;
-		//protected void OnPropertyChanged(string propertyName)
-		//{
-		//	PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		//}
-
-		public ICommand CountCommand { get; }
-		public DisplayCountViewModel()
+		// Failed TC Count and Corresponding Values
+		// Count failed test cases, get their IDs, and fetch corresponding values from another column
+		public static (int Count, List<string> TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
+			string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue, string targetColumn)
 		{
-			CountCommand = new RelayCommand(CountValues);
+			try
+			{
+				using (var workbook = new XLWorkbook(filepath))
+				{
+					var worksheet = workbook.Worksheet(sheetIndex);
+
+					// Get the cells of the test case ID column, excluding the header
+					var testCaseIdCells = worksheet.Column(testCaseIdColumn).CellsUsed().Skip(1);
+
+					// Initialize lists to store results
+					var failedTCIds = new List<string>();
+					var correspondingBugIds = new List<string>();
+
+					// Iterate through each cell in the test case ID column
+					foreach (var cell in testCaseIdCells)
+					{
+						var testCaseId = cell.GetValue<string>();
+
+						// If the test case ID is not equal to the excludeValue (e.g., "Random")
+						if (!testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
+						{
+							failedTCIds.Add(testCaseId);
+
+							// Fetch the corresponding value from the target column in the same row
+							var rowNumber = cell.Address.RowNumber;
+							var correspondingValue = worksheet.Cell(rowNumber, targetColumn).GetValue<string>();
+							correspondingBugIds.Add(correspondingValue);
+						}
+					}
+
+					// Return the count, list of IDs, and corresponding values
+					return (failedTCIds.Count, failedTCIds, correspondingBugIds);
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
+			}
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public int failedTcCount = 0;
-		public int existingOpenBugsCount = 0;
-		public int randomBugCount = 0;
-		public int failedTrCount = 0;
-
-		// File with Bug ID and Test Case ID
-		//public readonly string f1 = @"C:\Users\2021454\Downloads\Set1-buglist from mantis in Excel format.xlsm";
-		public readonly string f1 = @"C:\Users\2021454\Downloads\Data_Manager_Mantis Exported file Excel.xlsm";
-
-		// File with Test Case ID and Status (Pass/Fail)
-		//public readonly string f2 = @"C:\Users\2021454\Downloads\rigaku_easyx_tr.xlsm-rev1089.xlsm";
-		public readonly string f2 = @"C:\Users\2021454\Downloads\rigaku_data-manager_regression_tr.xlsm";
-
-
-		// Column containing Test Case IDs
-		public string columnName = "";
-		public string value = "";
-		public int sheetIndex = 0;
-		string targetColumn = ""; // Column to fetch corresponding values
-
-		private void CountValues(object parameter)
+		//Existing open bugs count
+		public static int ExistingOpenBugsCount(string filepath1, int sheetIndex1, string columnName1, string filepath2, int sheetIndex2, string columnName2, string value)
 		{
-			// Column containing Test Case IDs
-			columnName = "AC";
-			value = "Random";
-			sheetIndex = 1;
-			targetColumn = "A"; // Column to fetch corresponding values
-
-			string message = ""; 
-			string message2 = "";
-			string message3 = "";
-			// #1 Failed TC count
-			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+			try
 			{
-				var result = ExcelHelper.FailedTcIdAndCount(f1, sheetIndex, columnName, value, targetColumn);
-				failedTcCount = result.Count;
-
-				Dictionary<string, string> TcIdAndBugId = new Dictionary<string, string>();
-				for (int i = 0; i < result.TestCaseIds.Count; i++)
+				using (var workbook1 = new XLWorkbook(filepath1)) 
+				using (var workbook2 = new XLWorkbook(filepath2))
 				{
-					string tcId = result.TestCaseIds[i];
-					string bugId = result.CorrespondingValues[i];
+					//Data is in the (sheetIndex)th sheet
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
 
-					// Add each mapping to dictionary
-					TcIdAndBugId[tcId] = bugId;
+					// Get IDs from the 1st file
+					var ids1 = worksheet1.Column(columnName1).CellsUsed().Skip(1).Select(cell => cell.GetValue<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+					// Get IDs from the 2nd file
+					var ids2 = worksheet1.Column(columnName2).CellsUsed().Skip(1).Select(cell => cell.GetValue<string>()).ToList();
+
+					// Count matching IDs between 2 sets
+					return ids2.Count(id => ids1.Contains(id));
 				}
-				foreach (var kvp in TcIdAndBugId)
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in ExistingOpenBugsCount: {ex.Message}", ex);
+			}
+		}
+
+		//Random bug count
+		public static List<string> GetBugIdForRandomTcId(string filepath, int sheetIndex, string matchColumnName, string matchValue, string targetColumnName)
+		{
+			try
+			{
+				using (var workbook = new ClosedXML.Excel.XLWorkbook(filepath))
 				{
-					message += $"{kvp.Key} => Bug ID #{kvp.Value}\n"; // Failed TC message
+					var worksheet = workbook.Worksheet(sheetIndex);
+
+					// Get the column for the match and target
+					var matchColumn = worksheet.Column(matchColumnName).CellsUsed().Skip(1); // Skip header
+					var targetColumn = worksheet.Column(targetColumnName).CellsUsed().Skip(1); // Skip header
+
+					// Collect the corresponding values
+					var matchedValues = new List<string>();
+					foreach (var matchCell in matchColumn)
+					{
+						if (matchCell.GetValue<string>().Equals(matchValue, StringComparison.OrdinalIgnoreCase))
+						{
+							int rowNumber = matchCell.Address.RowNumber; // Get the row number
+							var targetCell = targetColumn.FirstOrDefault(cell => cell.Address.RowNumber == rowNumber);
+							if (targetCell != null)
+							{
+								matchedValues.Add(targetCell.GetValue<string>());
+							}
+						}
+					}
+
+					return matchedValues;
 				}
-				//MessageBox.Show(message);
 			}
-
-			// #2 Random bug count 
-			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex>0)
+			catch (Exception ex)
 			{
-				//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
-				var randomTcList = ExcelHelper.GetBugIdForRandomTcId(f1, sheetIndex, columnName, value, targetColumn);
-				randomBugCount = randomTcList.Count;
-				message2 += string.Join(", #",randomTcList);
+				throw new Exception($"Error in GetColumnValuesForMatch: {ex.Message}", ex);
 			}
+		}
 
-			columnName = "AC";
-			sheetIndex = 1;
-			var sheetIndex2 = 7;
-			var columnName2 = "C";
-			//#3 Existing open bugs count
-			if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+		///   //////   ////   ///////
+		public static int GetExistingBugsRowCountExcludingMatchesAndBlanks(
+			string filepath1, int sheetIndex1, string columnName1,
+			string filepath2, int sheetIndex2, string columnName2, string statusColumnName, string statusValue)
+		{
+			try
 			{
-				//var result = ExcelHelper.FailedTcIdAndCount(f1, sheetIndex, columnName, value);
-				//foreach (var id in result.TestCaseIds)
-				//{
-				//	//MessageBox.Show(id);
-				//	value = id;
-				//	existingOpenBugsCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
-				//}
-				//existingOpenBugsCount = ;
-				existingOpenBugsCount = ExcelHelper.ExistingOpenBugsCount(f1, sheetIndex, columnName, f2, sheetIndex2, columnName2, value);
-			}
-
-			sheetIndex = 7;
-			columnName = "H";
-			value = "Fail";
-			targetColumn = "C";
-			if (!string.IsNullOrEmpty(f2) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
-			{
-				//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
-				var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
-				failedTrCount = failedTrList.Count;
-				message3 += string.Join(", ", failedTrList);
-
-				foreach (var failedTr in failedTrList)
+				using (var workbook1 = new XLWorkbook(filepath1))
+				using (var workbook2 = new XLWorkbook(filepath2))
 				{
-					//if (failedTr == temp)
-					//{ }
-					//	if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+					// Load worksheets
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
+
+					// Get IDs from the second file (filtered by Status = "Fail") into a set
+					var failedTc = worksheet2
+						.RowsUsed()
+						.Skip(1) // Skip header row
+						.Where(row =>
+						{
+							var statusCell = row.Cell(statusColumnName);
+							return statusCell != null &&
+								   statusCell.GetValue<string>().Equals(statusValue, StringComparison.OrdinalIgnoreCase); // Filter rows where Status = "Fail"
+						})
+						.Select(row => row.Cell(columnName2).GetValue<string>())
+						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blank IDs
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+					// Filter IDs for "Fail" status only
+					var failedTestCaseIdsFiltered = failedTc
+						.Where(id => !string.IsNullOrWhiteSpace(id)) // Exclude blanks
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+					// Get IDs from the first file and exclude matches and blanks
+					//var remainingRowCount = worksheet1
+					//	.Column(columnName1)
+					//	.CellsUsed()
+					//	.Skip(1) // Skip header
+					//	.Count(cell =>
+					//		!string.IsNullOrWhi teSpace(cell.GetValue<string>()) && // Exclude blanks
+					//		!failedTc.Contains(cell.GetValue<string>())); // Exclude matches
+
+					// Get remaining rows count in worksheet1 where IDs are NOT in the failed test case list
+					var remainingRowCount = worksheet2
+						.Column(columnName2)
+						.CellsUsed()
+						.Skip(1) // Skip header
+						.Count(cell =>
+							!string.IsNullOrWhiteSpace(cell.GetValue<string>())); // Exclude failed IDs
+
+					return remainingRowCount;
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in GetExistingBugsRowCountExcludingMatchesAndBlanks: {ex.Message}", ex);
+			}
+		}
+
+		public static int CalculateExistingBugCount(
+			int failedTrCount,                      // Hardcoded failed TR count
+			string filepath1, int sheetIndex1,      // File 1 path and sheet index
+			string columnName1,                     // Column in File 1 to compare
+			string filepath2, int sheetIndex2,      // File 2 path and sheet index
+			string columnName2)                     // Column in File 2 to compare
+		{
+			try
+			{
+				using (var workbook1 = new XLWorkbook(filepath1))
+				using (var workbook2 = new XLWorkbook(filepath2))
+				{
+					// Load worksheets
+					var worksheet1 = workbook1.Worksheet(sheetIndex1);
+					var worksheet2 = workbook2.Worksheet(sheetIndex2);
+
+					// Get the cells of the test case ID column, excluding the header
+					var bugIdColumn = "A";
+					var testCaseIdCells = worksheet1.Column(columnName1).CellsUsed().Skip(1);
+					var bugIdCells = worksheet1.Column(bugIdColumn).CellsUsed().Skip(1);
+					var value = "Random";
+					// Filter and select IDs that are not equal to the "Random" and store it in file1Ids
+					//var file1Ids = testCaseIdCells
+					//	.Where(cell => !cell.GetValue<string>().Equals(value, StringComparison.OrdinalIgnoreCase))
+					//	.Select(cell => cell.GetValue<string>())
+					//	.ToList(); // get its Bug id
+
+					// Initialize lists to store results
+					//var failedTCIds = new List<string>();
+					//var correspondingBugId = new List<string>();
+
+					//// Iterate through each cell in the test case ID column
+					//foreach (var cell in testCaseIdCells)//file1Ids
+					//{
+					//	var testCaseId = cell.GetValue<string>();
+
+					//	// If the test case ID is not equal to "Random"
+					//	if (!testCaseId.Equals(value, StringComparison.OrdinalIgnoreCase))
 					//	{
-					//		//randomBugCount = ExcelHelper.BugsCount(f1, sheetIndex, columnName, value);
-					//		var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
+					//		failedTCIds.Add(testCaseId);
+
+					//		// Fetch the corresponding value from the target column in the same row
+					//		var rowNumber = cell.Address.RowNumber;
+					//		var correspondingValue = worksheet1.Cell(rowNumber, columnName1).GetValue<string>();
+					//		correspondingBugId.Add(correspondingValue);
+					//	}
+					//}
+					// Filter test case IDs (exclude "Random") and collect their corresponding bug IDs
+					var file1Ids = testCaseIdCells
+						.Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
+						.Select(cell => cell.GetValue<string>())
+						.ToList();
+
+					var correspondingBugIds = bugIdCells
+						.Where(cell => !cell.GetValue<string>().Equals("Random", StringComparison.OrdinalIgnoreCase))
+						.Select(cell => cell.GetValue<string>())
+						.ToList();
+
+
+					// Return the count, list of IDs, and corresponding values
+					//return (failedTCIds.Count, failedTCIds, correspondingValues);
+
+					var file2Ids = FailedTcBugIdFromTr(filepath2, correspondingBugIds);
+					// // // //
+
+					// Initialize lists to hold bug IDs and test case IDs
+					var bugIds = new List<string>();
+					var testCaseIds = new List<string>();
+
+					string statusColumn = "H";
+					string bugIdColumnFromTr = "L";
+					string testCaseIdColumn = "C";
+					int sheetIndex = 7;
+
+					// Load the Excel file using ClosedXML
+					using (var workbook = new XLWorkbook(filepath2))
+					{
+						var worksheet = workbook.Worksheet(sheetIndex); // Assuming data is in the first worksheet
+						var rows = worksheet.RowsUsed().Skip(1); // Get all used rows
+
+
+						// Loop through rows starting from the second row (skip header)
+						foreach (var row in rows.Skip(1))
+						{
+							var status = row.Cell(statusColumn).GetValue<string>();
+							var bugId = row.Cell(bugIdColumnFromTr).GetValue<string>();
+							var testCaseId = row.Cell(testCaseIdColumn).GetValue<string>();
+
+							// Apply the filtering conditions
+							if (status == "Fail" && !correspondingBugIds.Contains(bugId))
+							{
+								bugIds.Add(bugId);
+								testCaseIds.Add(testCaseId);
+							}
+						}
+					}
+					//var failedTrList = ExcelHelper.GetBugIdForRandomTcId(f2, sheetIndex, columnName, value, targetColumn);
+					//failedTrCount = failedTrList.Count;
+
+					var a = file2Ids.rowCount;
+					var b = file2Ids.bugIds.Count;
+					var c = file2Ids.testCaseIds.Count;
+
+					//MessageBox.Show($"{a}\n{b}\n{c}\n");
+					// Count matching IDs between File 1 and File 2
+					int matchingCount = file2Ids.testCaseIds.Count(id => file1Ids.Contains(id));
+
+					// Subtract (count of Tc ids available in both Mantis and Tr) from failedTcCount (count of status = "Fail" in Tr)
+					int existingBugCount = failedTrCount - matchingCount;
+
+					// Ensure the result is not negative
+					return existingBugCount >= 0 ? existingBugCount : 0;
 				}
 			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Error in CalculateExistingBugCount: {ex.Message}", ex);
+			}
+		}
 
-			MessageBox.Show($"Failed TCs : {failedTcCount}\n {message}\n" +
-				$"Existing Open bugs: {existingOpenBugsCount} (Fail TCs: {failedTrCount})\n {message3}\n\n" + //change var name of failedTcCount
-				$"Random bugs : {randomBugCount}\n #{message2}\n\n", "Result", MessageBoxButton.OK, MessageBoxImage.Information);
+		// Final 
+		public static (int rowCount, List<string> bugIds, List<string> testCaseIds) FailedTcBugIdFromTr(string filePath, List<string> bugIdsMantis)
+		{
+			// Initialize lists to hold bug IDs and test case IDs
+			var bugIds = new List<string>();
+			var testCaseIds = new List<string>();
+
+			string statusColumn = "H";
+			string bugIdColumn = "L";
+			string testCaseIdColumn = "C";
+			int sheetIndex = 7;
+			try
+			{
+				// Load the Excel file using ClosedXML
+				using (var workbook = new XLWorkbook(filePath))
+				{
+					var worksheet = workbook.Worksheet(sheetIndex); // Assuming data is in the first worksheet
+					var rows = worksheet.RowsUsed().Skip(1); // Get all used rows
+
+
+					// Loop through rows starting from the second row (skip header)
+					foreach (var row in rows.Skip(1))
+					{
+						var status = row.Cell(statusColumn).GetValue<string>();
+						var bugId = row.Cell(bugIdColumn).GetValue<string>();
+						var testCaseId = row.Cell(testCaseIdColumn).GetValue<string>();
+
+						// Apply the filtering conditions
+						if (status == "Fail" && !bugIdsMantis.Contains(bugId))
+						{
+							bugIds.Add(bugId);
+							testCaseIds.Add(testCaseId);
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error processing Excel file: {ex.Message}");
+			}
+
+			// Return the count, bug IDs, and test case IDs
+			return (bugIds.Count, bugIds, testCaseIds);
 		}
 	}
 }
