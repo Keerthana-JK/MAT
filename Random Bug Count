@@ -1,56 +1,31 @@
-public static List<Dictionary<string, string>> ReadFile(string filepath, int sheetIndex = 0)
+public static (int Count, List<string> TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
+    string filepath, string testCaseIdColumn, string excludeValue, string targetColumn, int sheetIndex = 0)
 {
-    var data = new List<Dictionary<string, string>>();
-    string extension = Path.GetExtension(filepath).ToLower();
-
     try
     {
-        if (extension == ".xlsx")
-        {
-            using (var workbook = new XLWorkbook(filepath))
-            {
-                var worksheet = workbook.Worksheet(sheetIndex);
-                var headers = worksheet.Row(1).Cells().Select(cell => cell.GetValue<string>()).ToList();
+        var data = ReadFile(filepath, sheetIndex);
 
-                foreach (var row in worksheet.RowsUsed().Skip(1))
+        var failedTCIds = new List<string>();
+        var correspondingBugIds = new List<string>();
+
+        foreach (var row in data)
+        {
+            if (row.TryGetValue(testCaseIdColumn, out var testCaseId) &&
+                !testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
+            {
+                failedTCIds.Add(testCaseId);
+
+                if (row.TryGetValue(targetColumn, out var correspondingValue))
                 {
-                    var rowData = new Dictionary<string, string>();
-                    for (int i = 0; i < headers.Count; i++)
-                    {
-                        rowData[headers[i]] = row.Cell(i + 1).GetValue<string>();
-                    }
-                    data.Add(rowData);
+                    correspondingBugIds.Add(correspondingValue);
                 }
             }
         }
-        else if (extension == ".csv")
-        {
-            var lines = File.ReadAllLines(filepath);
-            if (lines.Length > 0)
-            {
-                var headers = lines[0].Split(',').Select(h => h.Trim()).ToList();
 
-                foreach (var line in lines.Skip(1))
-                {
-                    var values = line.Split(',');
-                    var rowData = new Dictionary<string, string>();
-                    for (int i = 0; i < headers.Count; i++)
-                    {
-                        rowData[headers[i]] = i < values.Length ? values[i].Trim() : string.Empty;
-                    }
-                    data.Add(rowData);
-                }
-            }
-        }
-        else
-        {
-            throw new NotSupportedException("Only .xlsx and .csv file formats are supported.");
-        }
+        return (failedTCIds.Count, failedTCIds, correspondingBugIds);
     }
     catch (Exception ex)
     {
-        throw new Exception($"Error in ReadFile: {ex.Message}", ex);
+        throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
     }
-
-    return data;
 }
