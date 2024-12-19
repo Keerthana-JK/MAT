@@ -1,33 +1,48 @@
-public static (int Count, List<string> TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
-		string filepath, string testCaseIdColumn, string excludeValue, string targetColumn, int sheetIndex = 0)
-		{
-			//int Count, List< string > TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
-		//	string filepath, int sheetIndex, string testCaseIdColumn, string excludeValue, string targetColumn
-			try
-			{
-				var data = ReadExcelOrCsvFile(filepath, sheetIndex);
+public static List<Dictionary<string, string>> ReadExcelOrCsvFile(string filepath, int sheetIndex = 0)
+{
+    var rows = new List<Dictionary<string, string>>();
 
-				var failedTCIds = new List<string>();
-				var correspondingBugIds = new List<string>();
+    if (Path.GetExtension(filepath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+    {
+        // Handle Excel file
+        using (var workbook = new XLWorkbook(filepath))
+        {
+            var worksheet = workbook.Worksheet(sheetIndex + 1); // 1-based index
+            var headers = worksheet.FirstRow().Cells().Select(c => c.GetValue<string>()).ToList();
 
-				foreach (var row in data)
-				{
-					if (row.TryGetValue(testCaseIdColumn, out var testCaseId) &&
-						!testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
-					{
-						failedTCIds.Add(testCaseId);
+            foreach (var row in worksheet.RowsUsed().Skip(1)) // Skip header row
+            {
+                var rowData = new Dictionary<string, string>();
+                for (int i = 0; i < headers.Count; i++)
+                {
+                    rowData[headers[i]] = row.Cell(i + 1).GetValue<string>();
+                }
+                rows.Add(rowData);
+            }
+        }
+    }
+    else if (Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+    {
+        // Handle CSV file
+        var lines = File.ReadAllLines(filepath);
+        var headers = lines[0].Split(','); // Assuming ',' as delimiter
 
-						if (row.TryGetValue(targetColumn, out var correspondingValue))
-						{
-							correspondingBugIds.Add(correspondingValue);
-						}
-					}
-				}
+        foreach (var line in lines.Skip(1)) // Skip header line
+        {
+            var values = line.Split(',');
+            var rowData = new Dictionary<string, string>();
 
-				return (failedTCIds.Count, failedTCIds, correspondingBugIds);
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
-			}
-		}
+            for (int i = 0; i < headers.Length; i++)
+            {
+                rowData[headers[i].Trim()] = values[i].Trim();
+            }
+            rows.Add(rowData);
+        }
+    }
+    else
+    {
+        throw new NotSupportedException("Unsupported file type. Only .xlsx and .csv are supported.");
+    }
+
+    return rows;
+}
