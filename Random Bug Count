@@ -1,31 +1,20 @@
-public static (int Count, List<string> TestCaseIds, List<string> CorrespondingBugId) FailedTcIdAndCount(
-    string filepath, string testCaseIdColumn, string excludeValue, string targetColumn, int sheetIndex = 0)
-{
-    try
-    {
-        var data = ReadFile(filepath, sheetIndex);
+if (!string.IsNullOrEmpty(f1) && !string.IsNullOrEmpty(columnName) && !string.IsNullOrEmpty(value) && sheetIndex > 0)
+			{
+				var result = ExcelHelper.FailedTcIdAndCount(f1, sheetIndex, columnName, value, targetColumn);
+				failedTcCount = result.Count;
 
-        var failedTCIds = new List<string>();
-        var correspondingBugIds = new List<string>();
+				Dictionary<string, string> TcIdAndBugId = new Dictionary<string, string>();
+				for (int i = 0; i < result.TestCaseIds.Count; i++)
+				{
+					string tcId = result.TestCaseIds[i];
+					string bugId = result.CorrespondingBugId[i];
 
-        foreach (var row in data)
-        {
-            if (row.TryGetValue(testCaseIdColumn, out var testCaseId) &&
-                !testCaseId.Equals(excludeValue, StringComparison.OrdinalIgnoreCase))
-            {
-                failedTCIds.Add(testCaseId);
-
-                if (row.TryGetValue(targetColumn, out var correspondingValue))
-                {
-                    correspondingBugIds.Add(correspondingValue);
-                }
-            }
-        }
-
-        return (failedTCIds.Count, failedTCIds, correspondingBugIds);
-    }
-    catch (Exception ex)
-    {
-        throw new Exception($"Error in FailedTcIdAndCount: {ex.Message}", ex);
-    }
-}
+					// Add each mapping to dictionary
+					TcIdAndBugId[tcId] = bugId;
+				}
+				foreach (var kvp in TcIdAndBugId)
+				{
+					message += $"{kvp.Key} => Bug ID #{kvp.Value}\n"; // Failed TC message
+				}
+				//MessageBox.Show(message);
+			}
